@@ -1,0 +1,104 @@
+import { Plus, Star, ChevronDown, LayoutGrid, List } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import Link from "next/link";
+
+export default function Collection() {
+  const books = [
+    { title: "The Hunger Games", author: "Suzanne Collins", format: "EPUB", rating: 4 },
+    { title: "The Brothers Karamazov", author: "Fyodor Dostoevsky", format: "PDF", rating: 3 },
+    { title: "The Metamorphosis", author: "Franz Kafka", format: "AZW3", rating: 4 },
+    { title: "Laut Bercerita", author: "Leila S. Chudori", format: "DOCX", rating: 4 },
+    { title: "Dune", author: "Frank Herbert", format: "TXT", rating: 3 },
+  ];
+
+  const folders = [
+    { category: "FICTION", title: "A Song of Ice and Fire", author: "George R. R. Martin" },
+    { category: "FICTION", title: "A Song of Ice and Fire", author: "George R. R. Martin" },
+    { category: "FICTION", title: "The Hunger Games", author: "Suzanne Collins" },
+    { category: "FICTION", title: "A Song of Ice and Fire", author: "George R. R. Martin" },
+  ];
+
+  return (
+    <>
+      <div className="flex-1 p-8 flex flex-col gap-8 relative">
+            <h1 className="text-4xl font-bold font-serif mb-6">Your Collections</h1>
+
+            {/* Book Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+              {books.map((book, index) => (
+                <Link key={index} href="/home/book" className="flex flex-col items-center text-center group cursor-pointer">
+                  <div className="w-full aspect-[3/4] bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-3 relative flex items-center justify-center transition-transform group-hover:-translate-y-1">
+                    <span className="absolute top-2 right-2 bg-zinc-800/20 dark:bg-zinc-100/20 text-xs font-bold px-1.5 py-0.5 rounded">{book.format}</span>
+                  </div>
+                  <h3 className="font-bold text-sm mb-0.5 font-serif group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{book.title}</h3>
+                  <p className="text-xs text-zinc-500">{book.author}</p>
+                  <div className="flex justify-center gap-0.5 mt-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={`w-4 h-4 ${i < book.rating ? "text-amber-500 fill-amber-500" : "text-zinc-300"}`} />
+                    ))}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Folders Section */}
+            <div>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold font-serif">Folders</h2>
+                  <p className="text-sm text-zinc-500 mt-1">Manage Your Digital Archive — Group Files According to Your Preferred Structure</p>
+                  <p className="text-sm text-zinc-500">15 Folders in Archive</p>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  {/* Split Button for New Folders */}
+                  <div className="flex items-center rounded-md overflow-hidden bg-[#243342] text-white text-sm font-medium">
+                    <Button className="h-auto hover:bg-[#1B2631] px-4 py-2 transition-colors bg-transparent rounded-none">
+                      New Folders
+                    </Button>
+                    <div className="w-[1px] bg-white/20 h-5" />
+                    <Button className="h-auto hover:bg-[#1B2631] px-2 py-2 flex items-center justify-center transition-colors bg-transparent rounded-none">
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg text-sm">
+                    <div className="flex items-center gap-1 px-3 py-1.5">
+                      <span className="text-zinc-500">Sort by:</span>
+                      <Button className="h-auto p-0 bg-transparent font-medium flex items-center gap-1 text-zinc-900 dark:text-zinc-100">
+                        Date Added <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="w-[1px] bg-zinc-200 dark:bg-zinc-800 h-6" />
+                    <Button className="h-auto p-1.5 bg-white dark:bg-zinc-800 rounded-md shadow-sm">
+                      <LayoutGrid className="w-4 h-4" />
+                    </Button>
+                    <Button className="h-auto p-1.5 bg-transparent text-zinc-500">
+                      <List className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Folders Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {folders.map((folder, index) => (
+                  <Card key={index} className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 shadow-none">
+                    <span className="text-xs font-bold uppercase text-zinc-500 mb-1 block">{folder.category}</span>
+                    <h3 className="text-lg font-bold font-serif mb-0.5">{folder.title}</h3>
+                    <p className="text-sm text-zinc-500">{folder.author}</p>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* FAB */}
+            <Button className="fixed bottom-20 right-8 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors z-50 p-0">
+              <Plus className="w-6 h-6" />
+            </Button>
+          </div>
+    </>
+  );
+}
