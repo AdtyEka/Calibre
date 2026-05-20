@@ -100,8 +100,8 @@ export default function Home() {
                     </Button>
                   </div>
                   <div className="w-[1px] bg-zinc-200 dark:bg-zinc-800 h-6" />
-                  <Button className="h-auto p-1.5 bg-white dark:bg-zinc-800 rounded-md shadow-sm">
-                    <LayoutGrid className="w-4 h-4" />
+                  <Button className="h-auto p-1.5 bg-[#2C3E50] dark:bg-zinc-800 rounded-md shadow-xs">
+                    <LayoutGrid className="w-4 h-4 " />
                   </Button>
                   <Button className="h-auto p-1.5 bg-transparent text-zinc-500">
                     <List className="w-4 h-4" />

@@ -138,10 +138,6 @@ export default function Support() {
                 </div>
               </div>
             </div>
-
-            <Button className="fixed bottom-20 right-8 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors z-50 p-0">
-              <Plus className="w-6 h-6" />
-            </Button>
           </div>
     </>
   );
