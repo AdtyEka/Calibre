@@ -8,8 +8,9 @@ import BookCoverUploader from "./_components/BookCoverUploader";
 import BookMetadataForm from "./_components/BookMetadataForm";
 import ConnectModal from "@/components/ConnectModal";
 import RemoveModal from "./_components/RemoveModal";
-
+import { useBookPreview } from "@/components/providers/book-preview-context";
 export default function BookDetail() {
+  const { hoveredBook } = useBookPreview();
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
@@ -133,7 +134,13 @@ export default function BookDetail() {
               </div>
             </div>
 
-            <Button className="fixed bottom-20 right-8 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors z-50 p-0">
+            <Button 
+              className={`fixed bottom-20 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out z-50 p-0 ${
+                hoveredBook 
+                  ? "right-[262px] lg:right-[312px]" 
+                  : "right-8"
+              }`}
+            >
               <Plus className="w-6 h-6" />
             </Button>
           </div>

@@ -1,9 +1,14 @@
+"use client";
+
 import { LayoutGrid, List, Plus, Star, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { useBookPreview } from "@/components/providers/book-preview-context";
 
 export default function Home() {
+  const { setHoveredBook, hoveredBook } = useBookPreview();
+
   const books = [
     { title: "The Hunger Games", author: "Suzanne Collins", format: "EPUB" },
     { title: "The Brothers Karamazov", author: "Fyodor Dostoevsky", format: "PDF" },
@@ -19,7 +24,16 @@ export default function Home() {
               <h2 className="text-3xl font-bold mb-6 font-serif">Continue Reading</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Card 1 */}
-                <Link href="/home/book" className="block transition-transform hover:-translate-y-1">
+                <Link 
+                  href="/home/book" 
+                  className="block transition-transform hover:-translate-y-1"
+                  onMouseEnter={() => setHoveredBook({
+                    title: "A Dance with Dragons",
+                    author: "George R. R. Martin",
+                    format: "PDF"
+                  })}
+                  onMouseLeave={() => setHoveredBook(null)}
+                >
                   <Card className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 flex gap-6 bg-white dark:bg-zinc-950 shadow-none h-full">
                     <div className="w-32 h-44 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center relative flex-shrink-0">
                       <span className="absolute top-2 right-2 bg-zinc-800/20 dark:bg-zinc-100/20 text-xs font-bold px-1.5 py-0.5 rounded">PDF</span>
@@ -51,7 +65,16 @@ export default function Home() {
                 </Link>
 
                 {/* Card 2 */}
-                <Link href="/home/book" className="block transition-transform hover:-translate-y-1">
+                <Link 
+                  href="/home/book" 
+                  className="block transition-transform hover:-translate-y-1"
+                  onMouseEnter={() => setHoveredBook({
+                    title: "Hail Mary",
+                    author: "Andy Weir",
+                    format: "EPUB"
+                  })}
+                  onMouseLeave={() => setHoveredBook(null)}
+                >
                   <Card className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 flex gap-6 bg-white dark:bg-zinc-950 shadow-none h-full">
                     <div className="w-32 h-44 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center relative flex-shrink-0">
                       <span className="absolute top-2 right-2 bg-zinc-800/20 dark:bg-zinc-100/20 text-xs font-bold px-1.5 py-0.5 rounded">EPUB</span>
@@ -112,7 +135,17 @@ export default function Home() {
               {/* Book Grid using map */}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {books.map((book, index) => (
-                  <Link key={index} href="/home/book" className="flex flex-col group cursor-pointer">
+                  <Link 
+                    key={index} 
+                    href="/home/book" 
+                    className="flex flex-col group cursor-pointer"
+                    onMouseEnter={() => setHoveredBook({
+                      title: book.title,
+                      author: book.author,
+                      format: book.format
+                    })}
+                    onMouseLeave={() => setHoveredBook(null)}
+                  >
                     <div className="aspect-[3/4] bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-3 relative flex items-center justify-center transition-transform group-hover:-translate-y-1">
                       <span className="absolute top-2 right-2 bg-zinc-800/20 dark:bg-zinc-100/20 text-xs font-bold px-1.5 py-0.5 rounded">{book.format}</span>
                     </div>
@@ -129,7 +162,13 @@ export default function Home() {
               </div>
             </div>
 
-            <Button className="fixed bottom-20 right-8 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors z-50 p-0">
+            <Button 
+              className={`fixed bottom-20 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out z-50 p-0 ${
+                hoveredBook 
+                  ? "right-[262px] lg:right-[312px]" 
+                  : "right-8"
+              }`}
+            >
               <Plus className="w-6 h-6" />
             </Button>
           </div>
