@@ -1,19 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Share, Edit, FileEdit, Repeat, FolderOpen, Trash2, ChevronRight, Plus } from "lucide-react";
+import { 
+  Download, Share, Edit, FileEdit, Repeat, FolderOpen, Trash2, ChevronRight, Plus
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import BookCoverUploader from "./_components/BookCoverUploader";
 import BookMetadataForm from "./_components/BookMetadataForm";
 import ConnectModal from "@/components/ConnectModal";
 import RemoveModal from "./_components/RemoveModal";
+import ConvertModal from "./_components/ConvertModal";
 import { useBookPreview } from "@/components/providers/book-preview-context";
+
 export default function BookDetail() {
   const { hoveredBook } = useBookPreview();
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
 
   return (
     <>
@@ -58,10 +63,13 @@ export default function BookDetail() {
                       <FileEdit className="w-5 h-5" />
                       <span>Edit Book Contents</span>
                     </Link>
-                    <Link href="/home/convert" className="flex items-center gap-3 text-[#1e293b] dark:text-zinc-200 hover:opacity-70 transition-opacity text-left font-semibold">
+                    <button 
+                      onClick={() => setIsConvertModalOpen(true)} 
+                      className="flex items-center gap-3 text-[#1e293b] dark:text-zinc-200 hover:opacity-70 transition-opacity text-left font-semibold cursor-pointer"
+                    >
                       <Repeat className="w-5 h-5" />
                       <span>Convert Format</span>
-                    </Link>
+                    </button>
                     <button 
                       onClick={() => setIsFolderModalOpen(true)}
                       className="flex items-center gap-3 text-[#1e293b] dark:text-zinc-200 hover:opacity-70 transition-opacity text-left font-semibold cursor-pointer"
@@ -134,7 +142,8 @@ export default function BookDetail() {
               </div>
             </div>
 
-            <Button 
+            <Link 
+              href="/home/convert"
               className={`fixed bottom-20 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out z-50 p-0 ${
                 hoveredBook 
                   ? "right-[262px] lg:right-[312px]" 
@@ -142,7 +151,7 @@ export default function BookDetail() {
               }`}
             >
               <Plus className="w-6 h-6" />
-            </Button>
+            </Link>
           </div>
 
       {/* Edit Metadata Modal */}
@@ -185,9 +194,12 @@ export default function BookDetail() {
           setIsRemoveModalOpen(false);
         }}
       />
+
+      {/* Conversion Format Modal */}
+      <ConvertModal 
+        isOpen={isConvertModalOpen} 
+        onClose={() => setIsConvertModalOpen(false)} 
+      />
     </>
   );
 }
-
-
-

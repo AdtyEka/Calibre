@@ -162,7 +162,8 @@ export default function Home() {
               </div>
             </div>
 
-            <Button 
+            <Link 
+              href="/home/convert"
               className={`fixed bottom-20 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out z-50 p-0 ${
                 hoveredBook 
                   ? "right-[262px] lg:right-[312px]" 
@@ -170,7 +171,7 @@ export default function Home() {
               }`}
             >
               <Plus className="w-6 h-6" />
-            </Button>
+            </Link>
           </div>
     </>
   );
