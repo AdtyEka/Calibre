@@ -344,9 +344,20 @@ export default function BookDetail({ searchParams }: PageProps) {
       <RemoveModal
         isOpen={isRemoveModalOpen}
         onClose={() => setIsRemoveModalOpen(false)}
-        onConfirm={() => {
-          setIsRemoveModalOpen(false);
-          router.push("/home/library");
+        onConfirm={async () => {
+          try {
+            const res = await fetch(`/api/remove?id=${idBukuValid}`, { method: "DELETE" });
+            const data = await res.json();
+            
+            if (!res.ok) {
+              throw new Error(data.error || "Gagal menghapus buku");
+            }
+            
+            setIsRemoveModalOpen(false);
+            router.push("/home/library");
+          } catch (error: any) {
+            alert(error.message || "Terjadi kesalahan saat menghapus buku.");
+          }
         }}
       />
 

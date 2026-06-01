@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 interface RemoveModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void> | void;
 }
 
 export default function RemoveModal({ isOpen, onClose, onConfirm }: RemoveModalProps) {
@@ -16,12 +16,13 @@ export default function RemoveModal({ isOpen, onClose, onConfirm }: RemoveModalP
 
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setIsDeleting(true);
-    setTimeout(() => {
-      onConfirm();
+    try {
+      await onConfirm();
+    } finally {
       setIsDeleting(false);
-    }, 1500);
+    }
   };
 
   return (
