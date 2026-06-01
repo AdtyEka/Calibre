@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { LayoutGrid, List, Plus, Star, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,12 +8,39 @@ import Link from "next/link";
 import { useBookPreview } from "@/components/providers/book-preview-context";
 
 export default function Home() {
-  const books = [
-    { title: "The Hunger Games", author: "Suzanne Collins", format: "EPUB" },
-    { title: "The Brothers Karamazov", author: "Fyodor Dostoevsky", format: "PDF" },
-    { title: "The Metamorphosis", author: "Franz Kafka", format: "AZW3" },
-    { title: "Laut Bercerita", author: "Leila S. Chudori", format: "DOCX" },
-  ];
+  const [books, setBooks] = useState<any[]>([]);
+  const [libraryId, setLibraryId] = useState<string>("Calibre_Library");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchBooks() {
+      try {
+        setIsLoading(true);
+        const res = await fetch("/api/calibre");
+        if (!res.ok) throw new Error("Gagal fetch data");
+        const data = await res.json();
+        
+        if (data.metadata) {
+          const booksArray = Object.keys(data.metadata).map(id => {
+            const b = data.metadata[id];
+            return {
+              id: id,
+              title: b.title || "Unknown Title",
+              author: b.authors ? b.authors.join(", ") : "Unknown Author",
+              format: b.formats ? b.formats[0] : "EPUB",
+            };
+          });
+          setBooks(booksArray);
+          setLibraryId(data.library_id || "Calibre_Library");
+        }
+      } catch (error) {
+        console.error("Gagal mengambil daftar buku:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchBooks();
+  }, []);
 
   return (
     <>
@@ -113,17 +141,27 @@ export default function Home() {
           </div>
 
           {/* Book Grid using map */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {books.map((book, index) => (
-              <Link key={index} href="/home/book" className="flex flex-col group cursor-pointer">
-                <div className="aspect-[3/4] bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-3 relative flex items-center justify-center transition-transform group-hover:-translate-y-1">
-                  <span className="absolute top-2 right-2 bg-zinc-800/20 dark:bg-zinc-100/20 text-xs font-bold px-1.5 py-0.5 rounded">{book.format}</span>
-                </div>
-                <h3 className="font-bold text-sm mb-0.5 font-serif group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{book.title}</h3>
-                <p className="text-xs text-zinc-500">{book.author}</p>
-              </Link>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center py-10 w-full text-zinc-500 text-sm font-medium">Memuat koleksi buku...</div>
+          ) : books.length === 0 ? (
+            <div className="flex justify-center py-10 w-full text-zinc-500 text-sm font-medium">Tidak ada buku di perpustakaan.</div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {books.map((book) => {
+                const coverUrl = `http://127.0.0.1:8081/get/cover/${book.id}/${libraryId}`;
+                return (
+                  <Link key={book.id} href={`/home/book?id=${book.id}`} className="flex flex-col group cursor-pointer">
+                    <div className="aspect-[3/4] bg-zinc-100 dark:bg-zinc-900 rounded-lg mb-3 relative flex items-center justify-center overflow-hidden transition-transform group-hover:-translate-y-1 border border-zinc-200 dark:border-zinc-800">
+                      <span className="absolute top-2 right-2 bg-black/60 dark:bg-white/80 text-white dark:text-black text-[10px] font-bold px-1.5 py-0.5 rounded z-10 backdrop-blur-sm">{book.format}</span>
+                      <img src={coverUrl} alt={book.title} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                    </div>
+                    <h3 className="font-bold text-sm mb-0.5 font-serif group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1" title={book.title}>{book.title}</h3>
+                    <p className="text-xs text-zinc-500 line-clamp-1" title={book.author}>{book.author}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
 
           <div className="flex justify-center mt-8">
             <Button className="h-auto bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium px-6 py-2.5 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">

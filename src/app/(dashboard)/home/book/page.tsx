@@ -82,11 +82,11 @@ export default function BookDetail({ searchParams }: PageProps) {
   const formatBuku = buku?.formats ? buku.formats[0] : "EPUB";
   const deskripsiBuku = isLoading
     ? "<p className='animate-pulse text-zinc-400'>Sedang memuat sinopsis perpustakaan...</p>"
-    : (buku?.comments || "<p className='text-zinc-400 italic'>Tidak ada sinopsis resmi untuk buku ini.</p>");
+    : (buku?.comments || "<p className='text-zinc-400 italic'>Tidak ada sinopsis (Data 'comments' kosong dari backend Calibre).</p>");
 
   // URL Cover dan Download Otomatis yang dikunci menggunakan ID Buku Valid hasil sinkronisasi
   const coverUrl = `http://127.0.0.1:8081/get/cover/${idBukuValid}/${libraryId}`;
-  const downloadUrl = `http://127.0.0.1:8081/get/fmt/${idBukuValid}/${formatBuku}/${libraryId}`;
+  const downloadUrl = `http://127.0.0.1:8081/get/${formatBuku}/${idBukuValid}/${libraryId}`;
 
   return (
     <>
