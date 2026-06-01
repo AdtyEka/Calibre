@@ -26,9 +26,10 @@ interface ConvertModalProps {
     formats: string[];
     size?: string;
   };
+  onConvertSuccess?: () => void;
 }
 
-export default function ConvertModal({ isOpen, onClose, currentBook }: ConvertModalProps) {
+export default function ConvertModal({ isOpen, onClose, currentBook, onConvertSuccess }: ConvertModalProps) {
   const [queue, setQueue] = useState<QueueItem[]>([
     {
       id: "q1",
@@ -149,7 +150,7 @@ export default function ConvertModal({ isOpen, onClose, currentBook }: ConvertMo
     }
   };
 
-  const handleConvertCurrentBook = () => {
+  const handleConvertCurrentBook = async () => {
     if (!currentBook) return;
     
     const newId = `q-${Date.now()}`;
@@ -166,20 +167,61 @@ export default function ConvertModal({ isOpen, onClose, currentBook }: ConvertMo
 
     setQueue(prev => [newItem, ...prev]);
 
+    // Animate progress to 90% while waiting
     let prog = 0;
     const progInterval = setInterval(() => {
       setQueue(prev => prev.map(item => {
-        if (item.id === newId) {
-          const nextP = item.progress + 10;
-          if (nextP >= 100) {
+        if (item.id === newId && item.status === "Converting") {
+          const nextP = item.progress + 5;
+          if (nextP >= 90) {
             clearInterval(progInterval);
-            return { ...item, status: "Completed", progress: 100 };
+            return { ...item, progress: 90 };
           }
           return { ...item, progress: nextP };
         }
         return item;
       }));
-    }, 500);
+    }, 1000);
+
+    try {
+      const res = await fetch("/api/convert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookId: currentBook.id,
+          fromFormat: inputFormat,
+          toFormat: outputFormat
+        })
+      });
+
+      const data = await res.json();
+      clearInterval(progInterval);
+
+      if (!res.ok) {
+        throw new Error(data.error || "Conversion failed");
+      }
+
+      setQueue(prev => prev.map(item => {
+        if (item.id === newId) {
+          return { ...item, status: "Completed", progress: 100 };
+        }
+        return item;
+      }));
+
+      // Call callback to let parent know the format is added
+      if (onConvertSuccess) {
+        onConvertSuccess();
+      }
+
+    } catch (error: any) {
+      clearInterval(progInterval);
+      setQueue(prev => prev.map(item => {
+        if (item.id === newId) {
+          return { ...item, status: "Error", progress: 40, errorMsg: error.message || "Conversion error" };
+        }
+        return item;
+      }));
+    }
   };
 
   const handleRetry = (id: string) => {
@@ -206,13 +248,9 @@ export default function ConvertModal({ isOpen, onClose, currentBook }: ConvertMo
   };
 
   const handleDownloadItem = (item: QueueItem) => {
-    // Check if the backend actually has this format
-    const hasFormatOnBackend = currentBook && currentBook.formats && 
-      currentBook.formats.map((f: string) => f.toUpperCase()).includes(item.toFormat.toUpperCase());
-
-    if (currentBook && item.title === currentBook.title && hasFormatOnBackend) {
-      // Real download URL construction (using a default library ID for demo)
-      const downloadUrl = `http://127.0.0.1:8081/get/${item.toFormat.toUpperCase()}/${currentBook.id}/Calibre_Library`;
+    // If it matches the current book, we assume the backend has it (since we now do real conversions)
+    if (currentBook && item.title === currentBook.title) {
+      const downloadUrl = `/api/download?bookId=${currentBook.id}&format=${item.toFormat}`;
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = `${item.title}.${item.toFormat.toLowerCase()}`;

@@ -34,6 +34,7 @@ export default function BookDetail({ searchParams }: PageProps) {
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // 3. EFFECT: Ambil data aman melalui Jembatan API Lokal
   useEffect(() => {
@@ -77,7 +78,7 @@ export default function BookDetail({ searchParams }: PageProps) {
     }
 
     fetchDetailBuku();
-  }, [idBukuFromUrl]);
+  }, [idBukuFromUrl, refreshTrigger]);
 
   // 4. Kunci Pengikat ID Asli (Memastikan ID yang dilempar ke URL Cover & Download 100% Valid)
   const idBukuValid = buku?.id ? String(buku.id) : idBukuFromUrl;
@@ -92,7 +93,7 @@ export default function BookDetail({ searchParams }: PageProps) {
 
   // URL Cover dan Download Otomatis yang dikunci menggunakan ID Buku Valid hasil sinkronisasi
   const coverUrl = coverUrlOverride || `http://127.0.0.1:8081/get/cover/${idBukuValid}/${libraryId}`;
-  const downloadUrl = `http://127.0.0.1:8081/get/${formatBuku}/${idBukuValid}/${libraryId}`;
+  const downloadUrl = `/api/download?bookId=${idBukuValid}&format=${formatBuku}`;
 
   const handleSaveMetadataChanges = () => {
     if (pendingMetadataChanges) {
@@ -281,6 +282,7 @@ export default function BookDetail({ searchParams }: PageProps) {
           formats: buku.formats || ["EPUB"],
           size: buku.size ? `${(buku.size / (1024*1024)).toFixed(2)} MB` : undefined
         } : undefined}
+        onConvertSuccess={() => setRefreshTrigger(prev => prev + 1)}
       />
     </>
   );
