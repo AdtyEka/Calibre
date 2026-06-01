@@ -36,6 +36,9 @@ export default function BookDetail({ searchParams }: PageProps) {
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // States untuk fitur membaca (Resume Reading)
+  const [readProgress, setReadProgress] = useState(0);
+
   // 3. EFFECT: Ambil data aman melalui Jembatan API Lokal
   useEffect(() => {
     async function fetchDetailBuku() {
@@ -83,6 +86,16 @@ export default function BookDetail({ searchParams }: PageProps) {
   // 4. Kunci Pengikat ID Asli (Memastikan ID yang dilempar ke URL Cover & Download 100% Valid)
   const idBukuValid = buku?.id ? String(buku.id) : idBukuFromUrl;
 
+  // EFFECT tambahan: Ambil progress baca dari localStorage
+  useEffect(() => {
+    if (idBukuValid) {
+      const savedPct = localStorage.getItem(`calibre-reader-pct-${idBukuValid}`);
+      if (savedPct) {
+        setReadProgress(parseInt(savedPct, 10));
+      }
+    }
+  }, [idBukuValid]);
+
   // 5. Ekstraksi Data Berdasarkan State Buku Aktif
   const judulBuku = isLoading ? "Memuat Judul..." : (buku?.title || "Judul Tidak Ditemukan");
   const penulisBuku = isLoading ? "Memuat Penulis..." : (buku?.authors ? buku.authors.join(", ") : "Unknown Author");
@@ -103,6 +116,25 @@ export default function BookDetail({ searchParams }: PageProps) {
       }));
     }
     setIsMetadataModalOpen(false);
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: judulBuku,
+      text: `Lihat buku ${judulBuku} oleh ${penulisBuku} di Library saya!`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        alert("Link buku berhasil disalin ke clipboard!");
+      }
+    } catch (err) {
+      console.log("Error sharing:", err);
+    }
   };
 
   return (
@@ -135,7 +167,7 @@ export default function BookDetail({ searchParams }: PageProps) {
                   <Download className="w-4 h-4" /> Download
                 </Button>
               </a>
-              <Button variant="outline" className="h-11 rounded-full border-zinc-200 dark:border-zinc-700 text-[#64748b] dark:text-zinc-300 font-medium shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-900 flex gap-2">
+              <Button onClick={handleShare} variant="outline" className="h-11 rounded-full border-zinc-200 dark:border-zinc-700 text-[#64748b] dark:text-zinc-300 font-medium shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-900 flex gap-2">
                 <Share className="w-4 h-4" /> Share
               </Button>
             </div>
@@ -193,15 +225,17 @@ export default function BookDetail({ searchParams }: PageProps) {
               </div>
 
               <div className="w-full sm:w-[260px] flex-shrink-0 flex flex-col">
-                <Button className="h-auto w-full bg-[#1e293b] hover:bg-black dark:bg-zinc-100 dark:hover:bg-white dark:text-black text-white text-base font-semibold py-3 rounded-lg transition-colors mb-4 shadow-sm">
-                  Resume Reading
-                </Button>
+                <Link href={`/home/book/read?id=${idBukuValid}`}>
+                  <Button className="h-auto w-full bg-[#1e293b] hover:bg-black dark:bg-zinc-100 dark:hover:bg-white dark:text-black text-white text-base font-semibold py-3 rounded-lg transition-colors mb-4 shadow-sm">
+                    {readProgress > 0 ? "Resume Reading" : "Start Reading"}
+                  </Button>
+                </Link>
                 <div className="flex justify-between text-sm text-[#64748b] dark:text-zinc-400 font-medium mb-2">
-                  <span>12% Complete</span>
-                  <span>Page 59 of 496</span>
+                  <span>{readProgress}% Complete</span>
+                  {/* Hiding fixed page numbers since epub uses dynamic locations */}
                 </div>
                 <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#E5C39C] rounded-full" style={{ width: '12%' }}></div>
+                  <div className="h-full bg-[#E5C39C] rounded-full transition-all duration-300" style={{ width: `${readProgress}%` }}></div>
                 </div>
               </div>
             </div>
