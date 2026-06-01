@@ -129,7 +129,7 @@ export default function BookDetail({ searchParams }: PageProps) {
 
             {/* Actions (Mengaktifkan Tombol Download Fisik Berkas) */}
             <div className="grid grid-cols-2 gap-3">
-              <a href={downloadUrl} download className="w-full">
+              <a href={downloadUrl} download target="_blank" rel="noopener noreferrer" className="w-full">
                 <Button variant="outline" className="h-11 w-full rounded-full border-zinc-200 dark:border-zinc-700 text-[#64748b] dark:text-zinc-300 font-medium shadow-none hover:bg-zinc-50 dark:hover:bg-zinc-900 flex gap-2 items-center justify-center">
                   <Download className="w-4 h-4" /> Download
                 </Button>
@@ -274,6 +274,13 @@ export default function BookDetail({ searchParams }: PageProps) {
       <ConvertModal 
         isOpen={isConvertModalOpen} 
         onClose={() => setIsConvertModalOpen(false)} 
+        currentBook={buku ? {
+          id: idBukuValid,
+          title: judulBuku,
+          author: penulisBuku,
+          formats: buku.formats || ["EPUB"],
+          size: buku.size ? `${(buku.size / (1024*1024)).toFixed(2)} MB` : undefined
+        } : undefined}
       />
     </>
   );

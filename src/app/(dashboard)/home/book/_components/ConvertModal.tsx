@@ -19,9 +19,16 @@ interface QueueItem {
 interface ConvertModalProps {
   isOpen: boolean;
   onClose: () => void;
+  currentBook?: {
+    id: string | number;
+    title: string;
+    author: string;
+    formats: string[];
+    size?: string;
+  };
 }
 
-export default function ConvertModal({ isOpen, onClose }: ConvertModalProps) {
+export default function ConvertModal({ isOpen, onClose, currentBook }: ConvertModalProps) {
   const [queue, setQueue] = useState<QueueItem[]>([
     {
       id: "q1",
@@ -69,9 +76,18 @@ export default function ConvertModal({ isOpen, onClose }: ConvertModalProps) {
   const [fetchMetadata, setFetchMetadata] = useState(true);
   const [extractFromFile, setExtractFromFile] = useState(true);
   const [inputFormat, setInputFormat] = useState("PDF");
-  const [outputFormat, setOutputFormat] = useState("AW2");
+  const [outputFormat, setOutputFormat] = useState("EPUB");
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (currentBook && currentBook.formats && currentBook.formats.length > 0) {
+      const currentFormat = currentBook.formats[0].toUpperCase();
+      setInputFormat(currentFormat);
+      // Set default output format to something different than input format
+      setOutputFormat(currentFormat === "EPUB" ? "MOBI" : "EPUB");
+    }
+  }, [currentBook]);
 
   // Animate the converting queue item
   useEffect(() => {
@@ -133,6 +149,39 @@ export default function ConvertModal({ isOpen, onClose }: ConvertModalProps) {
     }
   };
 
+  const handleConvertCurrentBook = () => {
+    if (!currentBook) return;
+    
+    const newId = `q-${Date.now()}`;
+    const newItem: QueueItem = {
+      id: newId,
+      title: currentBook.title,
+      author: currentBook.author || "Unknown Author",
+      size: currentBook.size || "Unknown Size",
+      fromFormat: inputFormat,
+      toFormat: outputFormat,
+      status: "Converting",
+      progress: 0
+    };
+
+    setQueue(prev => [newItem, ...prev]);
+
+    let prog = 0;
+    const progInterval = setInterval(() => {
+      setQueue(prev => prev.map(item => {
+        if (item.id === newId) {
+          const nextP = item.progress + 10;
+          if (nextP >= 100) {
+            clearInterval(progInterval);
+            return { ...item, status: "Completed", progress: 100 };
+          }
+          return { ...item, progress: nextP };
+        }
+        return item;
+      }));
+    }, 500);
+  };
+
   const handleRetry = (id: string) => {
     setQueue(prev => prev.map(item => {
       if (item.id === id) {
@@ -154,6 +203,36 @@ export default function ConvertModal({ isOpen, onClose }: ConvertModalProps) {
         return item;
       }));
     }, 600);
+  };
+
+  const handleDownloadItem = (item: QueueItem) => {
+    // Check if the backend actually has this format
+    const hasFormatOnBackend = currentBook && currentBook.formats && 
+      currentBook.formats.map((f: string) => f.toUpperCase()).includes(item.toFormat.toUpperCase());
+
+    if (currentBook && item.title === currentBook.title && hasFormatOnBackend) {
+      // Real download URL construction (using a default library ID for demo)
+      const downloadUrl = `http://127.0.0.1:8081/get/${item.toFormat.toUpperCase()}/${currentBook.id}/Calibre_Library`;
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${item.title}.${item.toFormat.toLowerCase()}`;
+      link.target = "_blank"; // In case it's cross-origin and download attribute doesn't force download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    // Simulated download for dummy/uploaded items
+    const blob = new Blob([`Simulated content for ${item.title} in ${item.toFormat} format.`], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${item.title.replace(/\s+/g, "_")}.${item.toFormat.toLowerCase()}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleRemove = (id: string) => {
@@ -350,6 +429,16 @@ export default function ConvertModal({ isOpen, onClose }: ConvertModalProps) {
                     </div>
                   </div>
                 </div>
+
+                {currentBook && (
+                  <Button 
+                    onClick={handleConvertCurrentBook}
+                    className="w-full h-12 mt-4 bg-[#1A2530] hover:bg-[#111922] dark:bg-zinc-100 dark:hover:bg-white dark:text-black text-white font-bold rounded-xl shadow-none transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                    Convert {currentBook.title.length > 25 ? currentBook.title.substring(0, 25) + "..." : currentBook.title}
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -457,7 +546,7 @@ export default function ConvertModal({ isOpen, onClose }: ConvertModalProps) {
                               <span className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200">{Math.round(item.progress)}%</span>
                             )}
                             {item.status === "Completed" && (
-                              <button className="text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 transition-colors cursor-pointer flex items-center justify-center" title="Download">
+                              <button onClick={() => handleDownloadItem(item)} className="text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200 transition-colors cursor-pointer flex items-center justify-center" title="Download">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                               </button>
                             )}
