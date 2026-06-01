@@ -208,7 +208,7 @@ export default function BookDetail({ searchParams }: PageProps) {
                   <Edit className="w-5 h-5" />
                   <span>Edit Metadata</span>
                 </button>
-                <Link href="/home/book/edit" className="flex items-center gap-3 text-[#1e293b] dark:text-zinc-200 hover:opacity-70 transition-opacity text-left font-semibold">
+                <Link href={`/home/book/edit?id=${idBukuValid}`} className="flex items-center gap-3 text-[#1e293b] dark:text-zinc-200 hover:opacity-70 transition-opacity text-left font-semibold">
                   <FileEdit className="w-5 h-5" />
                   <span>Edit Book Contents</span>
                 </Link>
