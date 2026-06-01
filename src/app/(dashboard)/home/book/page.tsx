@@ -35,6 +35,7 @@ export default function BookDetail({ searchParams }: PageProps) {
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isSavingMetadata, setIsSavingMetadata] = useState(false);
 
   // States untuk fitur membaca (Resume Reading)
   const [readProgress, setReadProgress] = useState(0);
@@ -105,17 +106,44 @@ export default function BookDetail({ searchParams }: PageProps) {
     : (buku?.comments || "<p className='text-zinc-400 italic'>Tidak ada sinopsis (Data 'comments' kosong dari backend Calibre).</p>");
 
   // URL Cover dan Download Otomatis yang dikunci menggunakan ID Buku Valid hasil sinkronisasi
-  const coverUrl = coverUrlOverride || `http://127.0.0.1:8081/get/cover/${idBukuValid}/${libraryId}`;
+  const coverUrl = coverUrlOverride || `/api/cover?id=${idBukuValid}`;
   const downloadUrl = `/api/download?bookId=${idBukuValid}&format=${formatBuku}`;
 
-  const handleSaveMetadataChanges = () => {
+  const handleSaveMetadataChanges = async () => {
     if (pendingMetadataChanges) {
-      setBuku((prev: any) => ({
-        ...prev,
-        ...pendingMetadataChanges
-      }));
+      setIsSavingMetadata(true);
+      try {
+        const res = await fetch("/api/metadata", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: pendingMetadataChanges.id || idBukuValid,
+            title: pendingMetadataChanges.title,
+            authors: pendingMetadataChanges.authors,
+            tags: pendingMetadataChanges.tags,
+            rating: pendingMetadataChanges.rating,
+            comments: pendingMetadataChanges.comments
+          })
+        });
+
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.error || "Gagal menyimpan metadata");
+        }
+
+        setBuku(pendingMetadataChanges);
+        setIsMetadataModalOpen(false);
+        // Catatan: Kita TIDAK memanggil setRefreshTrigger() di sini, karena server Calibre (port 8081) 
+        // akan me-return cache data yang lama dan justru me-reset state UI kita ke data lama.
+      } catch (error: any) {
+        alert(error.message || "Terjadi kesalahan saat menyimpan metadata.");
+      } finally {
+        setIsSavingMetadata(false);
+      }
+    } else {
+      setIsMetadataModalOpen(false);
     }
-    setIsMetadataModalOpen(false);
   };
 
   const handleShare = async () => {
@@ -271,8 +299,25 @@ export default function BookDetail({ searchParams }: PageProps) {
             <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
               <h2 className="text-3xl font-bold font-serif text-[#1e293b] dark:text-zinc-100">Edit Metadata</h2>
               <div className="flex items-center gap-6">
-                <button onClick={() => setIsMetadataModalOpen(false)} className="text-[#1e293b] dark:text-zinc-300 font-semibold hover:opacity-70 transition-opacity">Cancel</button>
-                <Button onClick={handleSaveMetadataChanges} className="bg-[#1e293b] hover:bg-black dark:bg-zinc-100 dark:hover:bg-white dark:text-black text-white px-6 rounded-lg font-medium shadow-none">Save Changes</Button>
+                <button 
+                  onClick={() => setIsMetadataModalOpen(false)} 
+                  disabled={isSavingMetadata}
+                  className="text-[#1e293b] dark:text-zinc-300 font-semibold hover:opacity-70 transition-opacity disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <Button 
+                  onClick={handleSaveMetadataChanges} 
+                  disabled={isSavingMetadata}
+                  className="bg-[#1e293b] hover:bg-black dark:bg-zinc-100 dark:hover:bg-white dark:text-black text-white px-6 rounded-lg font-medium shadow-none disabled:opacity-70 flex items-center gap-2"
+                >
+                  {isSavingMetadata ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full border-2 border-white/30 dark:border-black/30 border-t-white dark:border-t-black animate-spin" />
+                      Saving...
+                    </>
+                  ) : "Save Changes"}
+                </Button>
               </div>
             </div>
 

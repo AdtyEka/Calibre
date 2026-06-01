@@ -148,7 +148,7 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
               {books.map((book) => {
-                const coverUrl = `http://127.0.0.1:8081/get/cover/${book.id}/${libraryId}`;
+                const coverUrl = `/api/cover?id=${book.id}`;
                 return (
                   <Link key={book.id} href={`/home/book?id=${book.id}`} className="flex flex-col group cursor-pointer">
                     <div className="aspect-[3/4] bg-zinc-100 dark:bg-zinc-900 rounded-lg mb-3 relative flex items-center justify-center overflow-hidden transition-transform group-hover:-translate-y-1 border border-zinc-200 dark:border-zinc-800">
