@@ -1,51 +1,18 @@
+"use client";
+
 import { LayoutGrid, List, Plus, Star, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { useBookPreview } from "@/components/providers/book-preview-context";
 
-async function getCalibreData() {
-  const url = "http://127.0.0.1:8081/interface-data/books-init?library_id=Calibre_Library&sort=timestamp.desc";
-
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
-
-    const dataJson = await res.json();
-
-    // Trik Cerdas: Kita ambil pasangannya (ID dan Datanya)
-    const objekMetadata = dataJson.metadata;
-
-    // Kita looping setiap kunci ("1", "2") dan masukkan ke dalam data bukunya sebagai properti 'id'
-    const arrayBukuDenganId = Object.keys(objekMetadata).map((idAsli) => {
-      return {
-        ...objekMetadata[idAsli],
-        id: idAsli // Sekarang setiap buku DIJAMIN punya properti .id yang berisi angka asli ("1" atau "2")
-      };
-    });
-
-    return {
-      books: arrayBukuDenganId,
-      libraryId: dataJson.library_id,
-      totalBooks: dataJson.search_result.total_num
-    };
-  } catch (error) {
-    console.error("Gagal terhubung ke server Calibre:", error);
-    return null;
-  }
-}
-
-// 2. KOMPONEN UTAMA (Server Component)
-export default async function Home() {
-  const calibreData = await getCalibreData();
-
-  // Data fallback cadangan jika fetch gagal
-  const books = calibreData?.books || [
-    { id: 1, title: "The Hunger Games", authors: ["Suzanne Collins"], formats: ["EPUB"] },
-    { id: 2, title: "The Brothers Karamazov", authors: ["Fyodor Dostoevsky"], formats: ["PDF"] },
+export default function Home() {
+  const books = [
+    { title: "The Hunger Games", author: "Suzanne Collins", format: "EPUB" },
+    { title: "The Brothers Karamazov", author: "Fyodor Dostoevsky", format: "PDF" },
+    { title: "The Metamorphosis", author: "Franz Kafka", format: "AZW3" },
+    { title: "Laut Bercerita", author: "Leila S. Chudori", format: "DOCX" },
   ];
-
-  const libraryId = calibreData?.libraryId || "Calibre_Library";
-  const totalBooksArchive = calibreData?.totalBooks || books.length;
 
   return (
     <>
@@ -69,6 +36,7 @@ export default async function Home() {
                       <Star key={i} className={`w-4 h-4 ${i < 4 ? "text-amber-500 fill-amber-500" : "text-zinc-300"}`} />
                     ))}
                   </div>
+
                   <div className="mt-auto">
                     <div className="flex justify-between text-xs text-zinc-500 mb-1">
                       <span>78% Complete</span>
@@ -100,6 +68,7 @@ export default async function Home() {
                       <Star key={i} className={`w-4 h-4 ${i < 4 ? "text-amber-500 fill-amber-500" : "text-zinc-300"}`} />
                     ))}
                   </div>
+
                   <div className="mt-auto">
                     <div className="flex justify-between text-xs text-zinc-500 mb-1">
                       <span>12% Complete</span>
@@ -143,43 +112,17 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Book Grid */}
+          {/* Book Grid using map */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {books.map((book: any, index: number) => {
-
-              // KUNCI UTAMA: Calibre menyimpan ID unik buku pada properti bernama 'id'
-              // Kita pastikan mengambil properti tersebut secara akurat
-              const idBukuAsli = book.id;
-
-              const coverUrl = calibreData
-                ? `http://127.0.0.1:8081/get/cover/${idBukuAsli}/${libraryId}`
-                : "";
-
-              return (
-                <Link key={idBukuAsli || index} href={`/home/book?id=${idBukuAsli}`} className="flex flex-col group cursor-pointer">
-                  <div className="aspect-[3/4] bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-3 relative flex items-center justify-center transition-transform group-hover:-translate-y-1 overflow-hidden">
-                    {coverUrl ? (
-                      <img
-                        src={coverUrl}
-                        alt={book.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm font-serif p-4 text-center">{book.title}</span>
-                    )}
-                    <span className="absolute top-2 right-2 bg-zinc-900/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-xs">
-                      {book.formats ? book.formats[0] : "EPUB"}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-sm mb-0.5 font-serif group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-zinc-500 line-clamp-1">
-                    {book.authors ? book.authors.join(", ") : "Unknown Author"}
-                  </p>
-                </Link>
-              );
-            })}
+            {books.map((book, index) => (
+              <Link key={index} href="/home/book" className="flex flex-col group cursor-pointer">
+                <div className="aspect-[3/4] bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-3 relative flex items-center justify-center transition-transform group-hover:-translate-y-1">
+                  <span className="absolute top-2 right-2 bg-zinc-800/20 dark:bg-zinc-100/20 text-xs font-bold px-1.5 py-0.5 rounded">{book.format}</span>
+                </div>
+                <h3 className="font-bold text-sm mb-0.5 font-serif group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{book.title}</h3>
+                <p className="text-xs text-zinc-500">{book.author}</p>
+              </Link>
+            ))}
           </div>
 
           <div className="flex justify-center mt-8">
