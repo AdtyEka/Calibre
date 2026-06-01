@@ -36,7 +36,7 @@ export async function GET() {
         // kita langsung membaca database SQLite calibre secara realtime via Docker CLI
         const args = [
             "docker", "exec", "calibre", "calibredb", "list", 
-            "--fields", "id,title,authors,tags,rating,formats,size,comments,cover", 
+            "--fields", "id,title,authors,tags,rating,formats,size,comments,cover,timestamp,last_modified", 
             "--for-machine", 
             "--with-library", "/config/Calibre Library"
         ];
@@ -68,7 +68,9 @@ export async function GET() {
                 rating: book.rating || 0,
                 formats: extractedFormats,
                 size: book.size || 0,
-                comments: book.comments || ""
+                comments: book.comments || "",
+                timestamp: book.timestamp,
+                last_modified: book.last_modified
             };
         }
 
