@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface RemoveModalProps {
@@ -12,8 +12,17 @@ interface RemoveModalProps {
 
 export default function RemoveModal({ isOpen, onClose, onConfirm }: RemoveModalProps) {
   const [showWarningAgain, setShowWarningAgain] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    setIsDeleting(true);
+    setTimeout(() => {
+      onConfirm();
+      setIsDeleting(false);
+    }, 1500);
+  };
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4 sm:p-6 backdrop-blur-xs">
@@ -56,6 +65,7 @@ export default function RemoveModal({ isOpen, onClose, onConfirm }: RemoveModalP
                 <input 
                   type="checkbox" 
                   checked={showWarningAgain} 
+                  disabled={isDeleting}
                   onChange={(e) => setShowWarningAgain(e.target.checked)}
                   className="rounded border-zinc-300 dark:border-zinc-700 text-[#1c2e3d] focus:ring-[#1c2e3d] w-4 h-4 cursor-pointer"
                 />
@@ -68,19 +78,23 @@ export default function RemoveModal({ isOpen, onClose, onConfirm }: RemoveModalP
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <Button 
                   onClick={onClose}
-                  className="bg-[#1b2e3c] hover:bg-[#13212c] text-white px-5 py-2.5 rounded-lg font-bold shadow-none text-sm transition-colors cursor-pointer flex items-center gap-1.5 w-full sm:w-auto"
+                  disabled={isDeleting}
+                  className="bg-[#1b2e3c] hover:bg-[#13212c] disabled:opacity-50 text-white px-5 py-2.5 rounded-lg font-bold shadow-none text-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto"
                 >
                   <X className="w-4 h-4 text-white" />
                   No
                 </Button>
                 <Button 
-                  onClick={() => {
-                    onConfirm();
-                  }}
-                  className="bg-[#d9264c] hover:bg-[#b51d3b] text-white px-5 py-2.5 rounded-lg font-bold shadow-none text-sm transition-colors cursor-pointer flex items-center gap-1.5 w-full sm:w-auto"
+                  onClick={handleConfirm}
+                  disabled={isDeleting}
+                  className="bg-[#d9264c] hover:bg-[#b51d3b] disabled:opacity-50 text-white px-5 py-2.5 rounded-lg font-bold shadow-none text-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto min-w-[100px]"
                 >
-                  <Check className="w-4 h-4 text-white" />
-                  Yes
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  ) : (
+                    <Check className="w-4 h-4 text-white" />
+                  )}
+                  {isDeleting ? "Deleting..." : "Yes"}
                 </Button>
               </div>
             </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { Download, Share, Edit, FileEdit, Repeat, FolderOpen, Trash2, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import BookCoverUploader from "./_components/BookCoverUploader";
 import BookMetadataForm from "./_components/BookMetadataForm";
 import ConnectModal from "@/components/ConnectModal";
@@ -16,6 +17,7 @@ interface PageProps {
 }
 
 export default function BookDetail({ searchParams }: PageProps) {
+  const router = useRouter();
   // 1. Ambil ID Buku dari URL secara aman menggunakan 'use' bawaan React
   const parsedParams = use(searchParams);
   const idBukuFromUrl = parsedParams.id || "1";
@@ -263,8 +265,8 @@ export default function BookDetail({ searchParams }: PageProps) {
         isOpen={isRemoveModalOpen}
         onClose={() => setIsRemoveModalOpen(false)}
         onConfirm={() => {
-          alert("Book removed successfully from calibre library!");
           setIsRemoveModalOpen(false);
+          router.push("/home/library");
         }}
       />
 
