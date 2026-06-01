@@ -92,7 +92,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
               <h2 className="text-3xl font-bold font-serif">Your Virtual Library</h2>
-              <p className="text-sm text-zinc-500 mt-1">{totalBooksArchive} Books in Archive</p>
+              <p className="text-sm text-zinc-500 mt-1">{books.length} Books in Archive</p>
             </div>
 
             <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg text-sm">
