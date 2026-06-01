@@ -27,6 +27,7 @@ export default function BookDetail({ searchParams }: PageProps) {
   const [libraryId, setLibraryId] = useState<string>("Calibre_Library");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [coverUrlOverride, setCoverUrlOverride] = useState<string | null>(null);
+  const [pendingMetadataChanges, setPendingMetadataChanges] = useState<any>(null);
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
@@ -38,6 +39,7 @@ export default function BookDetail({ searchParams }: PageProps) {
       try {
         setIsLoading(true);
         setCoverUrlOverride(null); // Reset override cover ketika pindah detail buku
+        setPendingMetadataChanges(null); // Reset pending changes ketika pindah detail buku
 
         // MENEMBAK API INTERNAL NEXT.JS (100% Bebas dari blokir CORS)
         const res = await fetch("/api/calibre");
@@ -89,6 +91,16 @@ export default function BookDetail({ searchParams }: PageProps) {
   // URL Cover dan Download Otomatis yang dikunci menggunakan ID Buku Valid hasil sinkronisasi
   const coverUrl = coverUrlOverride || `http://127.0.0.1:8081/get/cover/${idBukuValid}/${libraryId}`;
   const downloadUrl = `http://127.0.0.1:8081/get/${formatBuku}/${idBukuValid}/${libraryId}`;
+
+  const handleSaveMetadataChanges = () => {
+    if (pendingMetadataChanges) {
+      setBuku((prev: any) => ({
+        ...prev,
+        ...pendingMetadataChanges
+      }));
+    }
+    setIsMetadataModalOpen(false);
+  };
 
   return (
     <>
@@ -223,7 +235,7 @@ export default function BookDetail({ searchParams }: PageProps) {
               <h2 className="text-3xl font-bold font-serif text-[#1e293b] dark:text-zinc-100">Edit Metadata</h2>
               <div className="flex items-center gap-6">
                 <button onClick={() => setIsMetadataModalOpen(false)} className="text-[#1e293b] dark:text-zinc-300 font-semibold hover:opacity-70 transition-opacity">Cancel</button>
-                <Button onClick={() => setIsMetadataModalOpen(false)} className="bg-[#1e293b] hover:bg-black dark:bg-zinc-100 dark:hover:bg-white dark:text-black text-white px-6 rounded-lg font-medium shadow-none">Save Changes</Button>
+                <Button onClick={handleSaveMetadataChanges} className="bg-[#1e293b] hover:bg-black dark:bg-zinc-100 dark:hover:bg-white dark:text-black text-white px-6 rounded-lg font-medium shadow-none">Save Changes</Button>
               </div>
             </div>
 
@@ -234,7 +246,7 @@ export default function BookDetail({ searchParams }: PageProps) {
                 onCoverUpload={(newUrl) => setCoverUrlOverride(newUrl)}
                 onCoverRemove={() => setCoverUrlOverride(null)}
               />
-              <BookMetadataForm />
+              <BookMetadataForm book={buku} onChange={setPendingMetadataChanges} />
             </div>
           </div>
         </div>
