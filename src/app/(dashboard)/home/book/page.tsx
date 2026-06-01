@@ -26,6 +26,7 @@ export default function BookDetail({ searchParams }: PageProps) {
   const [buku, setBuku] = useState<any>(null);
   const [libraryId, setLibraryId] = useState<string>("Calibre_Library");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [coverUrlOverride, setCoverUrlOverride] = useState<string | null>(null);
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
@@ -36,6 +37,7 @@ export default function BookDetail({ searchParams }: PageProps) {
     async function fetchDetailBuku() {
       try {
         setIsLoading(true);
+        setCoverUrlOverride(null); // Reset override cover ketika pindah detail buku
 
         // MENEMBAK API INTERNAL NEXT.JS (100% Bebas dari blokir CORS)
         const res = await fetch("/api/calibre");
@@ -85,7 +87,7 @@ export default function BookDetail({ searchParams }: PageProps) {
     : (buku?.comments || "<p className='text-zinc-400 italic'>Tidak ada sinopsis (Data 'comments' kosong dari backend Calibre).</p>");
 
   // URL Cover dan Download Otomatis yang dikunci menggunakan ID Buku Valid hasil sinkronisasi
-  const coverUrl = `http://127.0.0.1:8081/get/cover/${idBukuValid}/${libraryId}`;
+  const coverUrl = coverUrlOverride || `http://127.0.0.1:8081/get/cover/${idBukuValid}/${libraryId}`;
   const downloadUrl = `http://127.0.0.1:8081/get/${formatBuku}/${idBukuValid}/${libraryId}`;
 
   return (
@@ -227,7 +229,11 @@ export default function BookDetail({ searchParams }: PageProps) {
 
             {/* Modal Content */}
             <div className="p-8 flex flex-col md:flex-row gap-8">
-              <BookCoverUploader />
+              <BookCoverUploader 
+                currentCoverUrl={coverUrl}
+                onCoverUpload={(newUrl) => setCoverUrlOverride(newUrl)}
+                onCoverRemove={() => setCoverUrlOverride(null)}
+              />
               <BookMetadataForm />
             </div>
           </div>
