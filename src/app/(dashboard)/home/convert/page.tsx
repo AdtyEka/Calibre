@@ -104,8 +104,8 @@ export default function ConvertFormat() {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle manual file upload selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle manual file upload selection — uploads to Calibre via API
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const newId = `q-${Date.now()}`;
@@ -119,28 +119,80 @@ export default function ConvertFormat() {
         author: "Unknown Author",
         size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
         fromFormat: ext,
-        toFormat: defaultOutput.split(" ")[0], // standard conversion format
+        toFormat: ext, // Adding as-is (no conversion)
         status: "Converting",
         progress: 0
       };
 
       setQueue(prev => [newItem, ...prev]);
 
-      // Simple upload progress simulation
-      let prog = 0;
-      const progInterval = setInterval(() => {
-        setQueue(prev => prev.map(item => {
-          if (item.id === newId) {
-            const nextP = item.progress + 10;
-            if (nextP >= 100) {
-              clearInterval(progInterval);
-              return { ...item, status: "Completed", progress: 100 };
+      // Upload file to API with real progress tracking
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        // Use XMLHttpRequest for upload progress tracking
+        const result = await new Promise<{ success: boolean; bookId?: string; error?: string }>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          
+          xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = Math.round((event.loaded / event.total) * 70); // Upload = 0-70%
+              setQueue(prev => prev.map(item => 
+                item.id === newId ? { ...item, progress: percentComplete } : item
+              ));
             }
-            return { ...item, progress: nextP };
-          }
-          return item;
-        }));
-      }, 500);
+          });
+
+          xhr.addEventListener("load", () => {
+            // Set progress to 80% while server processes
+            setQueue(prev => prev.map(item => 
+              item.id === newId ? { ...item, progress: 80 } : item
+            ));
+
+            try {
+              const response = JSON.parse(xhr.responseText);
+              if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+                resolve(response);
+              } else {
+                resolve({ success: false, error: response.error || "Upload failed" });
+              }
+            } catch {
+              resolve({ success: false, error: "Invalid server response" });
+            }
+          });
+
+          xhr.addEventListener("error", () => {
+            reject(new Error("Network error during upload"));
+          });
+
+          xhr.addEventListener("abort", () => {
+            reject(new Error("Upload was cancelled"));
+          });
+
+          xhr.open("POST", "/api/calibre/upload");
+          xhr.send(formData);
+        });
+
+        if (result.success) {
+          setQueue(prev => prev.map(item => 
+            item.id === newId ? { ...item, status: "Completed", progress: 100 } : item
+          ));
+        } else {
+          setQueue(prev => prev.map(item => 
+            item.id === newId ? { ...item, status: "Error", progress: 0, errorMsg: result.error || "Upload failed" } : item
+          ));
+        }
+      } catch (err: any) {
+        setQueue(prev => prev.map(item => 
+          item.id === newId ? { ...item, status: "Error", progress: 0, errorMsg: err.message || "Upload failed" } : item
+        ));
+      }
+
+      // Reset file input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 

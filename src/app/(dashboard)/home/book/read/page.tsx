@@ -16,7 +16,9 @@ export default function BookReaderPage() {
   const [isClient, setIsClient] = useState(false);
   const [percentage, setPercentage] = useState<number | null>(null);
   
-  const epubUrl = `/api/download?bookId=${bookId}&format=EPUB`;
+  // Stable cache buster: generated once per page load, not on every render
+  const [cacheBuster] = useState(() => Date.now());
+  const epubUrl = bookId ? `/api/download?bookId=${bookId}&format=EPUB&t=${cacheBuster}` : "";
 
   useEffect(() => {
     setIsClient(true);

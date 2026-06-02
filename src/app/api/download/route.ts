@@ -1,10 +1,61 @@
 import { NextResponse } from "next/server";
-import { exec } from "child_process";
-import { promisify } from "util";
-import fs from "fs/promises";
-import path from "path";
+import { spawn } from "child_process";
 
-const execAsync = promisify(exec);
+function runCommandBinary(command: string, args: string[]): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args);
+    const chunks: Buffer[] = [];
+    let stderr = "";
+
+    child.stdout.on("data", (data: Buffer) => {
+      chunks.push(data);
+    });
+
+    child.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(Buffer.concat(chunks));
+      } else {
+        reject(new Error(stderr || `Process exited with code ${code}`));
+      }
+    });
+
+    child.on("error", (error) => {
+      reject(error);
+    });
+  });
+}
+
+function runCommandString(command: string, args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args);
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout);
+      } else {
+        reject(new Error(stderr || `Process exited with code ${code}`));
+      }
+    });
+
+    child.on("error", (error) => {
+      reject(error);
+    });
+  });
+}
 
 export async function GET(request: Request) {
   try {
@@ -19,11 +70,17 @@ export async function GET(request: Request) {
     const targetFormat = format.toLowerCase();
 
     // 1. Get the path of the file inside docker
-    const listCmd = `wsl docker exec calibre calibredb list --search "id:=${bookId}" --fields formats --for-machine --with-library "/config/Calibre Library"`;
-    
+    const listArgs = [
+      "docker", "exec", "calibre", "calibredb", "list",
+      "--search", `id:=${bookId}`,
+      "--fields", "formats",
+      "--for-machine",
+      "--with-library", "/config/Calibre Library"
+    ];
+
     let listOutput;
     try {
-      const { stdout } = await execAsync(listCmd);
+      const stdout = await runCommandString("wsl", listArgs);
       listOutput = JSON.parse(stdout);
     } catch (err) {
       console.error("Failed to query calibredb:", err);
@@ -41,32 +98,26 @@ export async function GET(request: Request) {
       return new NextResponse(`No ${targetFormat} format for book ${bookId}`, { status: 404 });
     }
 
-    // 2. Copy the file from Docker to Next.js temp folder
-    const tempFileName = `book_${bookId}_${Date.now()}.${targetFormat}`;
-    const localTempDir = path.join(process.cwd(), "public", "downloads");
-    const localTempPath = path.join(localTempDir, tempFileName);
-
-    await fs.mkdir(localTempDir, { recursive: true });
-
-    // Important: replace Windows backslashes with forward slashes for WSL if needed, but since it's just docker cp, let's format it properly
-    // localTempPath is Windows path like d:\...\public\downloads\...
-    // WSL docker cp needs it to be in WSL format or Windows can run docker cp directly if docker is installed on Windows.
-    // Wait, the user has docker installed via WSL, so we use `wsl docker cp ...`
-    // If we use `wsl docker cp`, the destination path should be a WSL path.
-    // E.g., `d:\Study\S1\...` becomes `/mnt/d/Study/S1/...`
-    // Instead of doing complicated path translation, let's just do `docker exec calibre cat` and write it locally via node!
-    // But stdout maxBuffer is an issue. Let's use maxBuffer: 50 * 1024 * 1024 (50MB) for exec.
-    
+    // 2. Read the file as binary from Docker using spawn (not exec) to preserve binary integrity
     try {
-      const { stdout } = await execAsync(`wsl docker exec calibre cat "${sourcePath}"`, { 
-        maxBuffer: 50 * 1024 * 1024,
-        encoding: 'buffer' // Important for binary files!
-      });
-      
-      return new NextResponse(stdout, {
+      const fileBuffer = await runCommandBinary("wsl", [
+        "docker", "exec", "calibre", "cat", sourcePath
+      ]);
+
+      const contentType = targetFormat === "pdf"
+        ? "application/pdf"
+        : targetFormat === "epub"
+          ? "application/epub+zip"
+          : "application/octet-stream";
+
+      return new NextResponse(new Uint8Array(fileBuffer), {
         headers: {
           "Content-Disposition": `attachment; filename="book_${bookId}.${targetFormat}"`,
-          "Content-Type": targetFormat === "pdf" ? "application/pdf" : "application/octet-stream",
+          "Content-Type": contentType,
+          // Prevent caching so edits are always reflected
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "Pragma": "no-cache",
+          "Expires": "0",
         }
       });
     } catch (err) {

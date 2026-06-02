@@ -99,13 +99,15 @@ function EditBookContentsInner() {
   }, [bookId]);
 
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
+  const prevTabIdRef = useRef<string>("");
 
-  // Initialize editor content when active tab changes
+  // Initialize editor content ONLY when switching tabs, not on every content change
   useEffect(() => {
-    if (editorRef.current && activeTab) {
+    if (editorRef.current && activeTab && activeTabId !== prevTabIdRef.current) {
       editorRef.current.innerHTML = activeTab.content;
+      prevTabIdRef.current = activeTabId;
     }
-  }, [activeTabId, activeTab]);
+  }, [activeTabId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleEditorChange = () => {
     if (editorRef.current && activeTab) {
@@ -114,34 +116,61 @@ function EditBookContentsInner() {
     }
   };
 
-  const handleEditorBlur = async () => {
-    if (!editorRef.current || !activeTab || !bookId) return;
-    
-    const currentContent = editorRef.current.innerHTML;
-    setIsSaving(true);
+  // Helper function to save a specific tab's content to the Docker container
+  const saveTabContent = async (tabId: string, content: string): Promise<boolean> => {
     try {
       const res = await fetch("/api/epub/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bookId,
-          filePath: activeTab.id,
-          newContent: currentContent
+          filePath: tabId,
+          newContent: content
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan file");
+      return true;
     } catch (err: any) {
-      alert("Error saving: " + err.message);
-    } finally {
-      setIsSaving(false);
+      console.error("Error saving tab:", err);
+      return false;
     }
+  };
+
+  const handleEditorBlur = async () => {
+    if (!editorRef.current || !activeTab || !bookId) return;
+    
+    const currentContent = editorRef.current.innerHTML;
+    setIsSaving(true);
+    const success = await saveTabContent(activeTab.id, currentContent);
+    if (!success) {
+      alert("Error saving: Gagal menyimpan perubahan");
+    }
+    setIsSaving(false);
   };
 
   const handleRebuild = async () => {
     if (!bookId) return;
     setIsRebuilding(true);
+    
     try {
+      // 1. Save the current editor content first (in case user didn't click away)
+      if (editorRef.current && activeTab) {
+        const currentContent = editorRef.current.innerHTML;
+        // Update local state
+        setTabs(prev => prev.map(t => t.id === activeTab.id ? { ...t, content: currentContent } : t));
+        // Save to Docker
+        const saved = await saveTabContent(activeTab.id, currentContent);
+        if (!saved) {
+          const proceed = confirm("Gagal menyimpan tab aktif. Lanjutkan rebuild?");
+          if (!proceed) {
+            setIsRebuilding(false);
+            return;
+          }
+        }
+      }
+
+      // 2. Implode the EPUB
       const res = await fetch("/api/epub/implode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -150,7 +179,7 @@ function EditBookContentsInner() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menyusun ulang buku");
       
-      alert("Buku berhasil disusun ulang!");
+      alert("Buku berhasil disusun ulang! Perubahan sudah tersimpan ke library.");
       router.push(`/home/book?id=${bookId}`);
     } catch (err: any) {
       alert("Error rebuilding: " + err.message);
