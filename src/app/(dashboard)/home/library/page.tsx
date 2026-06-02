@@ -121,7 +121,7 @@ export default function Library() {
                   key={book.id}
                   href={`/home/book?id=${book.id}`}
                   className="flex flex-col group cursor-pointer"
-                  onMouseEnter={() => setHoveredBook({ title: book.title, author: book.author, format: book.format })}
+                  onMouseEnter={() => setHoveredBook({ title: book.title, author: book.author, format: book.format, coverUrl, rating: book.rating })}
                   onMouseLeave={() => setHoveredBook(null)}
                   onClick={() => setHoveredBook(null)}
                 >

@@ -115,9 +115,10 @@ export function BookPreviewProvider({ children }: { children: React.ReactNode })
     const lowerTitle = book.title.toLowerCase();
     const metadata = BOOK_METADATA_DATABASE[lowerTitle] || {};
     
+    // Hardcoded metadata is fallback only — real data from the book takes priority
     setHoveredBook({
-      ...book,
       ...metadata,
+      ...book,
     });
   };
 

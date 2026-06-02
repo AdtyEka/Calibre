@@ -24,21 +24,25 @@ export default function BookPreviewSidebar() {
           
           {/* Cover image */}
           <div className="w-40 h-56 bg-blue-900/40 rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.5)] relative flex items-center justify-center border border-white/10 flex-shrink-0 transition-transform duration-500 hover:scale-105">
-            {hoveredBook.coverUrl ? (
+            {/* Fallback initials (always rendered behind the image) */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+              <span className="text-2xl font-serif font-bold text-white/20 mb-2">
+                {hoveredBook.title.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 3)}
+              </span>
+              <span className="text-xs font-bold text-white/40 tracking-wider bg-white/10 px-2 py-0.5 rounded uppercase">
+                {hoveredBook.format}
+              </span>
+            </div>
+            {/* Cover image (loads on top of fallback) */}
+            {hoveredBook.coverUrl && (
               <img
                 src={hoveredBook.coverUrl}
                 alt={hoveredBook.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover relative z-10"
+                onError={e => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
               />
-            ) : (
-              <div className="flex flex-col items-center justify-center p-4">
-                <span className="text-2xl font-serif font-bold text-white/20 mb-2">
-                  {hoveredBook.title.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 3)}
-                </span>
-                <span className="text-xs font-bold text-white/40 tracking-wider bg-white/10 px-2 py-0.5 rounded uppercase">
-                  {hoveredBook.format}
-                </span>
-              </div>
             )}
           </div>
 
