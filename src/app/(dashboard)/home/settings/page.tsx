@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   ChevronDown, 
   X, 
@@ -43,6 +43,44 @@ export default function Settings() {
   // 4. Danger Zone Modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const saved = localStorage.getItem("calibre_settings");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.defaultFormat) setDefaultFormat(parsed.defaultFormat);
+        if (parsed.libraryPath) setLibraryPath(parsed.libraryPath);
+        if (parsed.interfaceLanguage) setInterfaceLanguage(parsed.interfaceLanguage);
+        if (parsed.priorityList) setPriorityList(parsed.priorityList);
+        if (parsed.conversionEngine) setConversionEngine(parsed.conversionEngine);
+        if (parsed.heuristicProcessing !== undefined) setHeuristicProcessing(parsed.heuristicProcessing);
+        if (parsed.dropboxConnected !== undefined) setDropboxConnected(parsed.dropboxConnected);
+        if (parsed.gdriveConnected !== undefined) setGdriveConnected(parsed.gdriveConnected);
+      }
+    } catch (e) {
+      console.error("Failed to load settings", e);
+    }
+  }, []);
+
+  // Save to localStorage when state changes
+  useEffect(() => {
+    if (!mounted) return;
+    const settingsToSave = {
+      defaultFormat,
+      libraryPath,
+      interfaceLanguage,
+      priorityList,
+      conversionEngine,
+      heuristicProcessing,
+      dropboxConnected,
+      gdriveConnected
+    };
+    localStorage.setItem("calibre_settings", JSON.stringify(settingsToSave));
+  }, [defaultFormat, libraryPath, interfaceLanguage, priorityList, conversionEngine, heuristicProcessing, dropboxConnected, gdriveConnected, mounted]);
 
   // Handlers for Metadata tag deletion
   const handleRemovePriority = (source: string) => {
@@ -305,7 +343,8 @@ export default function Settings() {
               variant="outline" 
               onClick={() => {
                 setIsExporting(true);
-                setTimeout(() => setIsExporting(false), 2000);
+                window.location.href = "/api/export";
+                setTimeout(() => setIsExporting(false), 3000);
               }}
               disabled={isExporting}
               className="h-10 px-5 rounded-lg border-zinc-900 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-bold text-xs shadow-none"

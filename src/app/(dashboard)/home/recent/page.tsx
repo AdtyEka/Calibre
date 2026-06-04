@@ -14,6 +14,7 @@ interface Book {
   rating: number;
   timestamp: string;
   last_modified: string;
+  description?: string;
 }
 
 export default function Recent() {
@@ -37,7 +38,8 @@ export default function Recent() {
               format: b.formats && b.formats.length > 0 ? b.formats[0] : "EPUB",
               rating: b.rating || 0,
               timestamp: b.timestamp || new Date().toISOString(),
-              last_modified: b.last_modified || new Date().toISOString()
+              last_modified: b.last_modified || new Date().toISOString(),
+              description: b.comments || ""
             };
           });
           setBooks(booksArray);
@@ -87,7 +89,10 @@ export default function Recent() {
               onMouseEnter={() => setHoveredBook({
                 title: book.title,
                 author: book.author,
-                format: book.format
+                format: book.format,
+                coverUrl: coverUrl,
+                rating: book.rating,
+                description: book.description
               })}
               onMouseLeave={() => setHoveredBook(null)}
             >

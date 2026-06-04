@@ -15,6 +15,7 @@ interface Book {
   rating: number;
   timestamp: string;
   last_modified: string;
+  description?: string;
 }
 
 export default function Library() {
@@ -41,7 +42,8 @@ export default function Library() {
               format: b.formats && b.formats.length > 0 ? b.formats[0] : "EPUB",
               rating: b.rating || 0,
               timestamp: b.timestamp || "",
-              last_modified: b.last_modified || ""
+              last_modified: b.last_modified || "",
+              description: b.comments || ""
             };
           });
           setBooks(list);
@@ -121,7 +123,7 @@ export default function Library() {
                   key={book.id}
                   href={`/home/book?id=${book.id}`}
                   className="flex flex-col group cursor-pointer"
-                  onMouseEnter={() => setHoveredBook({ title: book.title, author: book.author, format: book.format, coverUrl, rating: book.rating })}
+                  onMouseEnter={() => setHoveredBook({ title: book.title, author: book.author, format: book.format, coverUrl, rating: book.rating, description: book.description })}
                   onMouseLeave={() => setHoveredBook(null)}
                   onClick={() => setHoveredBook(null)}
                 >

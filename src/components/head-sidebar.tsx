@@ -16,7 +16,7 @@ export default function HeadSidebar() {
   const [isGetBooksOpen, setIsGetBooksOpen] = useState(false);
   const [isConnectOpen, setIsConnectOpen] = useState(false);
   let title = "Dashboard";
-  
+
   if (pathname.includes("/library") || pathname.includes("/book") || pathname.includes("/convert") || pathname.includes("/folder")) title = "Library";
   else if (pathname.includes("/recent")) title = "Recent";
   else if (pathname.includes("/collection")) title = "Collections";
@@ -38,7 +38,10 @@ export default function HeadSidebar() {
       </div>
 
       <div className="flex items-center gap-6 justify-self-end">
-        <Button className="h-auto p-0 bg-transparent text-zinc-700 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors hover:bg-transparent shadow-none">
+        <Button
+          onClick={() => window.location.reload()}
+          className="h-auto p-0 bg-transparent text-zinc-700 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors hover:bg-transparent shadow-none cursor-pointer"
+        >
           <RefreshCw className="w-[22px] h-[22px]" />
         </Button>
         <Button className="h-auto p-0 bg-transparent text-zinc-700 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors hover:bg-transparent shadow-none">
@@ -47,20 +50,20 @@ export default function HeadSidebar() {
         <Link href="/home/convert" className="font-bold text-base text-zinc-800 hover:text-black dark:text-zinc-300 dark:hover:text-white transition-colors">
           Convert
         </Link>
-        
+
         {/* Dropdown Container */}
         <div className="relative">
           {/* Click-outside backdrop overlay */}
           {isDropdownOpen && (
-            <div 
-              className="fixed inset-0 z-40 bg-transparent" 
+            <div
+              className="fixed inset-0 z-40 bg-transparent"
               onClick={() => setIsDropdownOpen(false)}
             />
           )}
 
           {/* Trigger split-capsule button */}
           <div className="relative z-50 flex items-center gap-[3px] text-white text-base font-medium">
-            <button 
+            <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="group bg-[#1e293b] hover:bg-[#2C3E50] dark:bg-zinc-900 dark:hover:bg-zinc-800 px-4.5 py-2.5 rounded-l-full rounded-r-[4px] transition-colors cursor-pointer shadow-sm flex items-center justify-center h-[38px]"
             >
@@ -71,7 +74,7 @@ export default function HeadSidebar() {
                 </div>
               </div>
             </button>
-            <button 
+            <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="bg-[#1e293b] hover:bg-[#2C3E50] dark:bg-zinc-900 dark:hover:bg-zinc-800 px-3.5 py-2.5 rounded-r-full rounded-l-[4px] flex items-center justify-center transition-colors cursor-pointer shadow-sm h-[38px]"
             >
@@ -84,7 +87,7 @@ export default function HeadSidebar() {
             <div className="absolute right-0 top-[54px] z-50 flex flex-col gap-2 items-end animate-in fade-in slide-in-from-top-2 duration-200">
               {/* Row 1: Get Books */}
               <div className="flex items-center gap-[3px] text-white text-sm font-semibold">
-                <button 
+                <button
                   onClick={() => {
                     setIsGetBooksOpen(true);
                     setIsDropdownOpen(false);
@@ -93,7 +96,7 @@ export default function HeadSidebar() {
                 >
                   Get Books
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     setIsGetBooksOpen(true);
                     setIsDropdownOpen(false);
@@ -106,7 +109,7 @@ export default function HeadSidebar() {
 
               {/* Row 2: Connect */}
               <div className="flex items-center gap-[3px] text-white text-sm font-semibold">
-                <button 
+                <button
                   onClick={() => {
                     setIsConnectOpen(true);
                     setIsDropdownOpen(false);
@@ -115,7 +118,7 @@ export default function HeadSidebar() {
                 >
                   Connect
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     setIsConnectOpen(true);
                     setIsDropdownOpen(false);
@@ -131,9 +134,9 @@ export default function HeadSidebar() {
       </div>
 
       {/* Get Books Modal popup overlay */}
-      <GetBooksModal 
-        isOpen={isGetBooksOpen} 
-        onClose={() => setIsGetBooksOpen(false)} 
+      <GetBooksModal
+        isOpen={isGetBooksOpen}
+        onClose={() => setIsGetBooksOpen(false)}
       />
 
       {/* Connect Modal popup overlay */}

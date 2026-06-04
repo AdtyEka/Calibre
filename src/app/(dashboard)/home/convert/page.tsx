@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { 
   Upload, 
   RefreshCw, 
@@ -35,54 +36,14 @@ interface QueueItem {
 }
 
 export default function ConvertFormat() {
-  const [queue, setQueue] = useState<QueueItem[]>([
-    {
-      id: "q1",
-      title: "The Silent Archive",
-      author: "A. H. Sterling",
-      size: "2.04 MB",
-      fromFormat: "PDF",
-      toFormat: "EPUB",
-      status: "Converting",
-      progress: 65
-    },
-    {
-      id: "q2",
-      title: "Once Upon a Broken Heart",
-      author: "Stephanie Garber",
-      size: "4.18 MB",
-      fromFormat: "EPUB",
-      toFormat: "MOBI",
-      status: "Completed",
-      progress: 100
-    },
-    {
-      id: "q3",
-      title: "The Laws of Human Nature",
-      author: "Robert Greene",
-      size: "1.01 MB",
-      fromFormat: "HTML",
-      toFormat: "EPUB",
-      status: "Error",
-      progress: 40,
-      errorMsg: "Corrupt Source File"
-    },
-    {
-      id: "q4",
-      title: "The Silent Archive",
-      author: "A. H. Sterling",
-      size: "2.4 MB",
-      fromFormat: "AZW3",
-      toFormat: "EPUB",
-      status: "Waiting",
-      progress: 0
-    }
-  ]);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
 
   const [fetchMetadata, setFetchMetadata] = useState(true);
   const [extractFromFile, setExtractFromFile] = useState(true);
   const [defaultOutput, setDefaultOutput] = useState("EPUB (Modern)");
   const [qualityProfile, setQualityProfile] = useState("High (300 DPI)");
+  const [recentImports, setRecentImports] = useState<any[]>([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,6 +63,43 @@ export default function ConvertFormat() {
     }, 1500);
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Fetch real recent imports from Calibre API
+  useEffect(() => {
+    const fetchRecent = async () => {
+      setIsLoadingRecent(true);
+      try {
+        const res = await fetch("/api/calibre");
+        const data = await res.json();
+        
+        if (data.metadata) {
+          const booksArray = Object.keys(data.metadata).map(id => {
+            const b = data.metadata[id];
+            return {
+              id: b.id,
+              title: b.title || "Unknown Title",
+              author: b.authors ? b.authors.join(", ") : "Unknown Author",
+              date: new Date(b.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+              timestamp: b.timestamp
+            };
+          });
+          
+          // Sort by timestamp descending
+          const recent = booksArray.sort((a, b) => {
+            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+          }).slice(0, 3);
+          
+          setRecentImports(recent);
+        }
+      } catch (error) {
+        console.error("Failed to fetch recent imports:", error);
+      } finally {
+        setIsLoadingRecent(false);
+      }
+    };
+
+    fetchRecent();
   }, []);
 
   // Handle manual file upload selection — uploads to Calibre via API
@@ -402,23 +400,25 @@ export default function ConvertFormat() {
             <BookOpen className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
             <h2 className="text-xl font-bold font-serif text-zinc-900 dark:text-zinc-100">Recent Imports</h2>
           </div>
-          <button className="text-xs font-bold text-[#64748b] hover:opacity-75 transition-opacity">View Full History</button>
+          <Link href="/home/recent" className="text-xs font-bold text-[#64748b] hover:opacity-75 transition-opacity">View Full History</Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { title: "Percy Jackson and The Ol...", author: "Rick Riordan", date: "March 15th, 2026" },
-            { title: "Atomic Habits", author: "James Clear", date: "March 15th, 2026" },
-            { title: "Alchemised", author: "SenLinYu", date: "March 15th, 2026" }
-          ].map((item, idx) => (
-            <Card key={idx} className="p-5 border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-900 rounded-2xl shadow-none hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer flex flex-col justify-between">
-              <div>
-                <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-150 truncate mb-1">{item.title}</h4>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mb-4">{item.author}</p>
-              </div>
-              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wide">Imported on {item.date}</p>
-            </Card>
-          ))}
+          {isLoadingRecent ? (
+            <div className="col-span-3 text-center py-4 text-zinc-500 text-sm">Loading recent imports...</div>
+          ) : recentImports.length === 0 ? (
+            <div className="col-span-3 text-center py-4 text-zinc-500 text-sm">No recent imports found.</div>
+          ) : (
+            recentImports.map((item, idx) => (
+              <Card key={idx} className="p-5 border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-900 rounded-2xl shadow-none hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-150 truncate mb-1" title={item.title}>{item.title}</h4>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mb-4" title={item.author}>{item.author}</p>
+                </div>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wide">Imported on {item.date}</p>
+              </Card>
+            ))
+          )}
         </div>
       </div>
 
@@ -462,16 +462,6 @@ export default function ConvertFormat() {
         </div>
 
       </div>
-
-      {/* Floating Action Button (FAB) */}
-      <button 
-        onClick={() => fileInputRef.current?.click()}
-        className="fixed bottom-24 right-8 bg-[#E5C39C] hover:bg-[#D4B28B] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 duration-200 z-40 animate-bounce"
-        style={{ animationDuration: "3s" }}
-        title="Add New Book"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
 
     </div>
   );

@@ -39,13 +39,42 @@ export default function GetBooksModal({ isOpen, onClose }: GetBooksModalProps) {
     { id: 22, name: "FeedBooks", checked: false },
   ]);
 
-  const results = [
-    { id: 1, title: "Six of Crows", price: "IDR 0.00", drm: "locked", store: "Barnes and Noble" },
-    { id: 2, title: "Six of Crows", price: "IDR 68,174", drm: "unlocked", store: "Project Gutenberg TXT, HTML, MP3" },
-    { id: 3, title: "Six of Crows", price: "IDR 0.00", drm: "unlocked", store: "Amazon Kindle" },
-    { id: 4, title: "Six of Crows", price: "48.58 €", drm: "locked", store: "Amazon Kindle" },
-    { id: 5, title: "Six of Crows", price: "33.38 €", drm: "locked", store: "Amazon Kindle" },
-  ];
+  const [results, setResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch("/api/getbooks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: bookTitle,
+          author: author,
+          keyword: keyword,
+          stores: stores.filter(s => s.checked)
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal melakukan pencarian");
+      }
+
+      setResults(data.data || []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleToggleStore = (id: number) => {
     setStores(stores.map(s => s.id === id ? { ...s, checked: !s.checked } : s));
@@ -61,6 +90,36 @@ export default function GetBooksModal({ isOpen, onClose }: GetBooksModalProps) {
 
   const handleInvert = () => {
     setStores(stores.map(s => ({ ...s, checked: !s.checked })));
+  };
+
+  const handleDownload = async (row: any) => {
+    if (!row.downloadUrl) {
+      alert("Maaf, buku ini tidak memiliki file yang bisa diunduh.");
+      return;
+    }
+
+    setDownloadingId(row.id);
+    try {
+      const response = await fetch("/api/getbooks/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          downloadUrl: row.downloadUrl,
+          title: row.title
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal mengunduh buku");
+      }
+
+      alert(`Buku "${row.title}" berhasil diunduh dan ditambahkan ke Library!`);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   if (!isOpen) return null;
@@ -93,13 +152,24 @@ export default function GetBooksModal({ isOpen, onClose }: GetBooksModalProps) {
                 <h3 className="font-bold text-lg">General Search</h3>
               </div>
               <Button 
-                onClick={() => alert(`Searching for Title: "${bookTitle}"`)}
-                className="bg-[#1b2e3c] hover:bg-[#13212c] text-white px-5 py-2 rounded-lg font-bold shadow-none text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                onClick={handleSearch}
+                disabled={isLoading}
+                className="bg-[#1b2e3c] hover:bg-[#13212c] text-white px-5 py-2 rounded-lg font-bold shadow-none text-xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-70"
               >
-                <Search className="w-3.5 h-3.5" />
-                Search
+                {isLoading ? (
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  <Search className="w-3.5 h-3.5" />
+                )}
+                {isLoading ? "Searching..." : "Search"}
               </Button>
             </div>
+
+            {error && (
+              <div className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-100 dark:border-red-900/50">
+                {error}
+              </div>
+            )}
 
             {/* Input Fields */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -226,43 +296,66 @@ export default function GetBooksModal({ isOpen, onClose }: GetBooksModalProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    {results.map(row => (
-                      <tr key={row.id} className="hover:bg-zinc-50/55 dark:hover:bg-zinc-900/50 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="w-10 h-14 bg-[#dbeafe] dark:bg-blue-900/20 rounded-md border border-zinc-200 dark:border-zinc-800 flex-shrink-0" />
-                        </td>
-                        <td className="py-3 px-4 font-bold text-zinc-800 dark:text-zinc-200 font-serif">
-                          {row.title}
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-zinc-600 dark:text-zinc-400">
-                          {row.price}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center">
-                            {row.drm === "locked" ? (
-                              <div className="w-8 h-8 rounded-lg bg-[#EAEFF5] dark:bg-zinc-800 flex items-center justify-center text-[#1b2e3c] dark:text-[#E5C39C]" title="Locked DRM">
-                                <Lock className="w-4 h-4" />
-                              </div>
-                            ) : (
-                              <div className="w-8 h-8 rounded-lg bg-[#EAEFF5] dark:bg-zinc-800 flex items-center justify-center text-zinc-500 dark:text-zinc-400" title="Unlocked DRM">
-                                <Unlock className="w-4 h-4" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-xs leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-[180px]">
-                          {row.store}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <button 
-                            onClick={() => alert(`Starting download for ${row.title} from ${row.store}`)}
-                            className="w-8 h-8 rounded-lg bg-[#EAEFF5] dark:bg-zinc-800 hover:bg-[#1b2e3c] hover:text-white dark:hover:bg-[#E5C39C] dark:hover:text-black flex items-center justify-center text-[#1b2e3c] dark:text-[#E5C39C] transition-all cursor-pointer border-0 mx-auto"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={6} className="py-10 text-center text-zinc-500">
+                          Sedang mencari buku...
                         </td>
                       </tr>
-                    ))}
+                    ) : results.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-10 text-center text-zinc-500">
+                          Tidak ada hasil pencarian.
+                        </td>
+                      </tr>
+                    ) : (
+                      results.map(row => (
+                        <tr key={row.id} className="hover:bg-zinc-50/55 dark:hover:bg-zinc-900/50 transition-colors">
+                          <td className="py-3 px-4">
+                            {row.cover ? (
+                              <img src={row.cover} alt={`Cover for ${row.title}`} className="w-10 h-14 object-cover rounded-md border border-zinc-200 dark:border-zinc-800 flex-shrink-0" />
+                            ) : (
+                              <div className="w-10 h-14 bg-[#dbeafe] dark:bg-blue-900/20 rounded-md border border-zinc-200 dark:border-zinc-800 flex-shrink-0" />
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-bold text-zinc-800 dark:text-zinc-200 font-serif">
+                            {row.title}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-zinc-600 dark:text-zinc-400">
+                            {row.price}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center">
+                              {row.drm === "locked" ? (
+                                <div className="w-8 h-8 rounded-lg bg-[#EAEFF5] dark:bg-zinc-800 flex items-center justify-center text-[#1b2e3c] dark:text-[#E5C39C]" title="Locked DRM">
+                                  <Lock className="w-4 h-4" />
+                                </div>
+                              ) : (
+                                <div className="w-8 h-8 rounded-lg bg-[#EAEFF5] dark:bg-zinc-800 flex items-center justify-center text-zinc-500 dark:text-zinc-400" title="Unlocked DRM">
+                                  <Unlock className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-xs leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-[180px]">
+                            {row.store}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button 
+                              onClick={() => handleDownload(row)}
+                              disabled={downloadingId === row.id}
+                              className="w-8 h-8 rounded-lg bg-[#EAEFF5] dark:bg-zinc-800 hover:bg-[#1b2e3c] hover:text-white dark:hover:bg-[#E5C39C] dark:hover:text-black flex items-center justify-center text-[#1b2e3c] dark:text-[#E5C39C] transition-all cursor-pointer border-0 mx-auto disabled:opacity-50"
+                            >
+                              {downloadingId === row.id ? (
+                                <span className="w-4 h-4 border-2 border-[#1b2e3c]/30 dark:border-[#E5C39C]/30 border-t-[#1b2e3c] dark:border-t-[#E5C39C] rounded-full animate-spin"></span>
+                              ) : (
+                                <Download className="w-4 h-4" />
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

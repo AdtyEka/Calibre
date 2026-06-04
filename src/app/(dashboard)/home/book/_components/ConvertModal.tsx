@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface QueueItem {
   id: string;
@@ -30,54 +31,14 @@ interface ConvertModalProps {
 }
 
 export default function ConvertModal({ isOpen, onClose, currentBook, onConvertSuccess }: ConvertModalProps) {
-  const [queue, setQueue] = useState<QueueItem[]>([
-    {
-      id: "q1",
-      title: "The Black Company",
-      author: "Glenn Cook",
-      size: "2.04 MB",
-      fromFormat: "PDF",
-      toFormat: "EPUB",
-      status: "Converting",
-      progress: 65
-    },
-    {
-      id: "q2",
-      title: "Once Upon a Broken Heart",
-      author: "Stephanie Garber",
-      size: "4.18 MB",
-      fromFormat: "EPUB",
-      toFormat: "MOBI",
-      status: "Completed",
-      progress: 100
-    },
-    {
-      id: "q3",
-      title: "The Laws of Human Nature",
-      author: "Robert Greene",
-      size: "1.01 MB",
-      fromFormat: "HTML",
-      toFormat: "EPUB",
-      status: "Error",
-      progress: 40,
-      errorMsg: "Corrupt Source File"
-    },
-    {
-      id: "q4",
-      title: "Dune",
-      author: "Frank Herbert",
-      size: "2.4 MB",
-      fromFormat: "AZW3",
-      toFormat: "EPUB",
-      status: "Waiting",
-      progress: 0
-    }
-  ]);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
 
   const [fetchMetadata, setFetchMetadata] = useState(true);
   const [extractFromFile, setExtractFromFile] = useState(true);
   const [inputFormat, setInputFormat] = useState("PDF");
   const [outputFormat, setOutputFormat] = useState("EPUB");
+  const [recentImports, setRecentImports] = useState<any[]>([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,6 +69,42 @@ export default function ConvertModal({ isOpen, onClose, currentBook, onConvertSu
     }, 1500);
 
     return () => clearInterval(interval);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchRecent = async () => {
+      setIsLoadingRecent(true);
+      try {
+        const res = await fetch("/api/calibre");
+        const data = await res.json();
+        
+        if (data.metadata) {
+          const booksArray = Object.keys(data.metadata).map(id => {
+            const b = data.metadata[id];
+            return {
+              id: b.id,
+              title: b.title || "Unknown Title",
+              author: b.authors ? b.authors.join(", ") : "Unknown Author",
+              date: new Date(b.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              timestamp: b.timestamp
+            };
+          });
+          
+          const recent = booksArray.sort((a, b) => {
+            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+          }).slice(0, 3);
+          
+          setRecentImports(recent);
+        }
+      } catch (error) {
+        console.error("Failed to fetch recent imports:", error);
+      } finally {
+        setIsLoadingRecent(false);
+      }
+    };
+
+    fetchRecent();
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -620,23 +617,25 @@ export default function ConvertModal({ isOpen, onClose, currentBook, onConvertSu
                 </svg>
                 <h2 className="text-xl font-bold font-serif text-zinc-900 dark:text-zinc-100 tracking-tight">Recent Imports</h2>
               </div>
-              <button className="text-xs font-bold text-[#475569] hover:opacity-75 transition-opacity cursor-pointer">View Full History</button>
+              <Link href="/home/recent" onClick={onClose} className="text-xs font-bold text-[#475569] hover:opacity-75 transition-opacity cursor-pointer">View Full History</Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { title: "Percy Jackson and The Ol...", author: "Rick Riordan", date: "March 15th, 2026" },
-                { title: "Atomic Habits", author: "James Clear", date: "March 15th, 2026" },
-                { title: "Alchemised", author: "SenLinYu", date: "March 15th, 2026" }
-              ].map((item, idx) => (
-                <Card key={idx} className="p-5 border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 rounded-2xl shadow-none hover:border-zinc-350 dark:hover:border-zinc-700 transition-colors flex flex-col justify-between h-[120px]">
-                  <div>
-                    <h4 className="font-bold font-serif text-[15px] text-zinc-900 dark:text-zinc-150 truncate mb-1 leading-snug">{item.title}</h4>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-550 font-semibold truncate mb-4">{item.author}</p>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 dark:text-zinc-550 font-medium">Imported on {item.date}</p>
-                </Card>
-              ))}
+              {isLoadingRecent ? (
+                <div className="col-span-3 text-center py-4 text-zinc-500 text-sm">Loading recent imports...</div>
+              ) : recentImports.length === 0 ? (
+                <div className="col-span-3 text-center py-4 text-zinc-500 text-sm">No recent imports found.</div>
+              ) : (
+                recentImports.map((item, idx) => (
+                  <Card key={idx} className="p-5 border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 rounded-2xl shadow-none hover:border-zinc-350 dark:hover:border-zinc-700 transition-colors flex flex-col justify-between h-[120px]">
+                    <div>
+                      <h4 className="font-bold font-serif text-[15px] text-zinc-900 dark:text-zinc-150 truncate mb-1 leading-snug" title={item.title}>{item.title}</h4>
+                      <p className="text-xs text-zinc-400 dark:text-zinc-550 font-semibold truncate mb-4" title={item.author}>{item.author}</p>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 dark:text-zinc-550 font-medium">Imported on {item.date}</p>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
 

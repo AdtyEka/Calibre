@@ -54,9 +54,6 @@ export default function HomeSidebar() {
     setMounted(true);
   }, []);
 
-  const isEditing = pathname?.includes("/book/edit") ?? false;
-  const exitUrl = isEditing ? "/home/book" : "/home/library";
-
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
@@ -99,12 +96,6 @@ export default function HomeSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 pb-[76px]">
-        <a href={exitUrl} className="w-full bg-[#D12B47] hover:bg-[#B5243C] text-white flex items-center justify-center gap-2 rounded-md py-3 text-base font-medium transition-colors">
-          <LogOut className="w-5 h-5" />
-          <span>Exit</span>
-        </a>
-      </SidebarFooter>
     </Sidebar>
   )
 }
