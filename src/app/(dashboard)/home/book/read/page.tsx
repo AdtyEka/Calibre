@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ReactReader } from "react-reader";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function BookReaderPage() {
+function BookReaderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const bookId = searchParams.get("id");
@@ -102,5 +102,13 @@ export default function BookReaderPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function BookReaderPage() {
+  return (
+    <Suspense fallback={<div className="h-screen bg-white dark:bg-[#121212]" />}>
+      <BookReaderContent />
+    </Suspense>
   );
 }
