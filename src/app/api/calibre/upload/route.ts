@@ -53,16 +53,22 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(bytes);
     await writeFile(tempFilePath, buffer);
 
-    // Convert Windows path to WSL path for docker cp
-    // e.g., D:\Study\... → /mnt/d/Study/...
-    const wslTempPath = tempFilePath
-      .replace(/\\/g, "/")
-      .replace(/^([A-Za-z]):/, (_, letter) => `/mnt/${letter.toLowerCase()}`);
+    const isWindows = process.platform === "win32";
+
+    // Only convert paths if on Windows
+    const hostPathForDocker = isWindows 
+      ? tempFilePath
+          .replace(/\\/g, "/")
+          .replace(/^([A-Za-z]):/, (_, letter) => `/mnt/${letter.toLowerCase()}`)
+      : tempFilePath;
 
     const containerTempPath = `/tmp/${Date.now()}_${sanitizedName}`;
 
+    // Use wsl prefix only on Windows
+    const dockerCmdPrefix = isWindows ? "wsl docker" : "docker";
+
     // 1. Copy file into Docker container
-    const cpCmd = `wsl docker cp "${wslTempPath}" calibre:"${containerTempPath}"`;
+    const cpCmd = `${dockerCmdPrefix} cp "${hostPathForDocker}" calibre:"${containerTempPath}"`;
     console.log(`[Upload] Copying file: ${cpCmd}`);
     
     try {
@@ -76,7 +82,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Add the book to Calibre library
-    const addCmd = `wsl docker exec calibre calibredb add "${containerTempPath}" --with-library "/config/Calibre Library"`;
+    const addCmd = `${dockerCmdPrefix} exec calibre calibredb add "${containerTempPath}" --with-library "/config/Calibre Library"`;
     console.log(`[Upload] Adding book: ${addCmd}`);
 
     let addOutput = "";
@@ -87,7 +93,7 @@ export async function POST(req: Request) {
     } catch (addErr: any) {
       console.error("[Upload] calibredb add failed:", addErr);
       // Clean up container temp file
-      try { await execAsync(`wsl docker exec calibre rm "${containerTempPath}"`); } catch {}
+      try { await execAsync(`${dockerCmdPrefix} exec calibre rm "${containerTempPath}"`); } catch {}
       return NextResponse.json(
         { error: "Failed to add book to Calibre library." },
         { status: 500 }
@@ -96,7 +102,7 @@ export async function POST(req: Request) {
 
     // 3. Clean up temp file in container
     try {
-      await execAsync(`wsl docker exec calibre rm "${containerTempPath}"`);
+      await execAsync(`${dockerCmdPrefix} exec calibre rm "${containerTempPath}"`);
     } catch {
       // ignore cleanup errors
     }
