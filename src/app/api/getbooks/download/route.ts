@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     containerTempPath = `/tmp/${Date.now()}_${filename}`;
 
     // 3. Copy file into Docker container
-    const cpCmd = `wsl docker cp "${wslTempPath}" calibre:"${containerTempPath}"`;
+    const cpCmd = `${process.platform === "win32" ? "wsl docker" : "docker"} cp "${wslTempPath}" calibre:"${containerTempPath}"`;
     try {
       await execAsync(cpCmd);
     } catch (cpErr: any) {
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     }
 
     // 4. Add the book to Calibre library
-    const addCmd = `wsl docker exec calibre calibredb add "${containerTempPath}" --with-library "/config/Calibre Library"`;
+    const addCmd = `${process.platform === "win32" ? "wsl docker" : "docker"} exec calibre calibredb add "${containerTempPath}" --with-library "/config/Calibre Library"`;
     let addOutput = "";
     try {
       const { stdout, stderr } = await execAsync(addCmd);
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     }
 
     // Cleanups
-    try { await execAsync(`wsl docker exec calibre rm "${containerTempPath}"`); } catch {}
+    try { await execAsync(`${process.platform === "win32" ? "wsl docker" : "docker"} exec calibre rm "${containerTempPath}"`); } catch {}
     try { await unlink(tempFilePath); } catch {}
 
     return NextResponse.json({
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
     
     // Attempt cleanups on error
     if (containerTempPath) {
-      try { await execAsync(`wsl docker exec calibre rm "${containerTempPath}"`); } catch {}
+      try { await execAsync(`${process.platform === "win32" ? "wsl docker" : "docker"} exec calibre rm "${containerTempPath}"`); } catch {}
     }
     if (tempFilePath) {
       try { await unlink(tempFilePath); } catch {}

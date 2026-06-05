@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const sourceFormat = fromFormat ? fromFormat.toLowerCase() : null;
 
     // 1. Get the book's formats and file paths
-    const listCmd = `wsl docker exec calibre calibredb list --search "id:=${bookId}" --fields formats --for-machine --with-library "/config/Calibre Library"`;
+    const listCmd = `${process.platform === "win32" ? "wsl docker" : "docker"} exec calibre calibredb list --search "id:=${bookId}" --fields formats --for-machine --with-library "/config/Calibre Library"`;
     
     let listOutput;
     try {
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     const tempFileName = `/tmp/convert_${bookId}_${Date.now()}.${targetFormat}`;
 
     // 2. Convert the book
-    const convertCmd = `wsl docker exec calibre ebook-convert "${sourcePath}" "${tempFileName}"`;
+    const convertCmd = `${process.platform === "win32" ? "wsl docker" : "docker"} exec calibre ebook-convert "${sourcePath}" "${tempFileName}"`;
     try {
       console.log(`Starting conversion: ${convertCmd}`);
       await execAsync(convertCmd);
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Add the new format back to the database
-    const addCmd = `wsl docker exec calibre calibredb add_format ${bookId} "${tempFileName}" --with-library "/config/Calibre Library"`;
+    const addCmd = `${process.platform === "win32" ? "wsl docker" : "docker"} exec calibre calibredb add_format ${bookId} "${tempFileName}" --with-library "/config/Calibre Library"`;
     try {
       console.log(`Adding format: ${addCmd}`);
       await execAsync(addCmd);
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
     }
 
     // 4. Cleanup temp file
-    const rmCmd = `wsl docker exec calibre rm "${tempFileName}"`;
+    const rmCmd = `${process.platform === "win32" ? "wsl docker" : "docker"} exec calibre rm "${tempFileName}"`;
     try {
       await execAsync(rmCmd);
     } catch (err: any) {

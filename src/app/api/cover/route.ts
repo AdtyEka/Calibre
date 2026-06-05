@@ -30,7 +30,15 @@ function runCommandBuffer(command: string, args: string[]): Promise<Buffer> {
   });
 }
 
-function runCommandString(command: string, args: string[]): Promise<string> {
+function runCommandString(command: string, args: string[]) {
+  // Patched by fix_wsl.js
+  if (command === "wsl" && process.platform !== "win32") {
+    command = "docker";
+    if (args[0] === "docker") {
+      args.shift();
+    }
+  }
+  // End Patch: Promise<string> {
     return runCommandBuffer(command, args).then(buf => buf.toString());
 }
 

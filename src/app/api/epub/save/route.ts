@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { spawn } from "child_process";
 
-function runCommandString(command: string, args: string[]): Promise<string> {
+function runCommandString(command: string, args: string[]) {
+  // Patched by fix_wsl.js
+  if (command === "wsl" && process.platform !== "win32") {
+    command = "docker";
+    if (args[0] === "docker") {
+      args.shift();
+    }
+  }
+  // End Patch: Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args);
     let stdout = "";
@@ -32,7 +40,7 @@ function runCommandString(command: string, args: string[]): Promise<string> {
 function writeToDocker(container: string, path: string, content: string): Promise<void> {
   return new Promise((resolve, reject) => {
     // Kita gunakan sh -c "cat > path" untuk menulis file langsung ke dalam Docker
-    const child = spawn("wsl", ["docker", "exec", "-i", container, "sh", "-c", `cat > "${path}"`]);
+    const child = spawn(process.platform === "win32" ? "wsl" : "docker", process.platform === "win32" ? ["docker" : [, "exec", "-i", container, "sh", "-c", `cat > "${path}"`]);
     
     let stderr = "";
     child.stderr.on("data", (data) => {
