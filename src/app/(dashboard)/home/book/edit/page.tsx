@@ -295,6 +295,22 @@ function EditBookContentsInner() {
               <Underline className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
             </Button>
           </div>
+
+          {/* Alignment Actions */}
+          <div className="flex items-center border-r border-zinc-200 dark:border-zinc-800 pr-3 mr-1 gap-1">
+            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg" onClick={() => handleFormat("justifyLeft")} title="Align Left">
+              <AlignLeft className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+            </Button>
+            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg" onClick={() => handleFormat("justifyCenter")} title="Align Center">
+              <AlignCenter className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+            </Button>
+            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg" onClick={() => handleFormat("justifyRight")} title="Align Right">
+              <AlignRight className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+            </Button>
+            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg" onClick={() => handleFormat("justifyFull")} title="Justify">
+              <AlignJustify className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+            </Button>
+          </div>
         </div>
 
         {/* Action Buttons Right */}
