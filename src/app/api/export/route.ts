@@ -4,7 +4,7 @@ import { spawn } from "child_process";
 export async function GET() {
   try {
     // We use tar to compress the Calibre Library directory and output it to stdout.
-    const child = spawn(process.platform === "win32" ? "wsl" : "docker", process.platform === "win32" ? ["docker" : [, "exec", "calibre", "tar", "-czf", "-", "-C", "/config", "Calibre Library"]);
+    const child = spawn(process.platform === "win32" ? "wsl" : "docker", process.platform === "win32" ? ["docker", "exec", "calibre", "tar", "-czf", "-", "-C", "/config", "Calibre Library"] : ["exec", "calibre", "tar", "-czf", "-", "-C", "/config", "Calibre Library"]);
 
     const stream = new ReadableStream({
       start(controller) {
