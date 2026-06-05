@@ -9,8 +9,8 @@ function runCommandString(command: string, args: string[]) {
       args.shift();
     }
   }
-  // End Patch: Promise<string> {
-  return new Promise((resolve, reject) => {
+  // End Patch
+  return new Promise<string>((resolve, reject) => {
     const child = spawn(command, args);
     let stdout = "";
     let stderr = "";
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
         ];
         
         const listJson = await runCommandString("wsl", listArgs);
-        const booksArray = JSON.parse(listJson);
+        const booksArray = JSON.parse(listJson as string);
         
         if (booksArray.length === 0 || !booksArray[0].formats) {
             return NextResponse.json({ error: "Buku tidak ditemukan" }, { status: 404 });

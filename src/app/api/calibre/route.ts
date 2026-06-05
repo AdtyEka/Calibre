@@ -10,8 +10,8 @@ function runCommand(command: string, args: string[]) {
       args.shift();
     }
   }
-  // End Patch: Promise<string> {
-  return new Promise((resolve, reject) => {
+  // End Patch
+  return new Promise<string>((resolve, reject) => {
     const child = spawn(command, args);
     let stdout = "";
     let stderr = "";
@@ -50,7 +50,7 @@ export async function GET() {
         ];
         
         const rawJson = await runCommand("wsl", args);
-        const booksArray = JSON.parse(rawJson);
+        const booksArray = JSON.parse(rawJson as string);
         
         // Format ulang data agar sesuai dengan struktur yang diharapkan oleh UI (seperti books-init)
         const metadataMap: Record<string, any> = {};

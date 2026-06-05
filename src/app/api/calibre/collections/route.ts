@@ -9,8 +9,8 @@ function runCommand(command: string, args: string[]) {
       args.shift();
     }
   }
-  // End Patch: Promise<string> {
-  return new Promise((resolve, reject) => {
+  // End Patch
+  return new Promise<string>((resolve, reject) => {
     const child = spawn(command, args);
     let stdout = "";
     let stderr = "";
@@ -49,7 +49,7 @@ export async function GET() {
     ];
 
     const rawJson = await runCommand("wsl", args);
-    const booksArray = JSON.parse(rawJson);
+    const booksArray = JSON.parse(rawJson as string);
 
     // Build a map: tag -> list of books
     const tagMap: Record<string, any[]> = {};

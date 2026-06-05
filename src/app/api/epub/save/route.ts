@@ -9,8 +9,8 @@ function runCommandString(command: string, args: string[]) {
       args.shift();
     }
   }
-  // End Patch: Promise<string> {
-  return new Promise((resolve, reject) => {
+  // End Patch
+  return new Promise<string>((resolve, reject) => {
     const child = spawn(command, args);
     let stdout = "";
     let stderr = "";

@@ -38,7 +38,8 @@ function runCommandString(command: string, args: string[]) {
       args.shift();
     }
   }
-  // End Patch: Promise<string> {
+  // End Patch
+  return new Promise<string>
     return runCommandBuffer(command, args).then(buf => buf.toString());
 }
 
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
         ];
         
         const rawJson = await runCommandString("wsl", argsList);
-        const booksArray = JSON.parse(rawJson);
+        const booksArray = JSON.parse(rawJson as string);
         
         if (booksArray.length === 0 || !booksArray[0].cover) {
             return NextResponse.json({ error: "Buku atau cover tidak ditemukan" }, { status: 404 });
