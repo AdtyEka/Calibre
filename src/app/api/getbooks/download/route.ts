@@ -42,15 +42,17 @@ export async function POST(req: Request) {
     tempFilePath = join(tempDir, `${Date.now()}_${filename}`);
     await writeFile(tempFilePath, Buffer.from(buffer));
 
-    // Convert Windows path to WSL path for docker cp
-    const wslTempPath = tempFilePath
-      .replace(/\\/g, "/")
-      .replace(/^([A-Za-z]):/, (_, letter) => `/mnt/${letter.toLowerCase()}`);
+    const isWindows = process.platform === "win32";
+    const hostPathForDocker = isWindows 
+      ? tempFilePath
+          .replace(/\\/g, "/")
+          .replace(/^([A-Za-z]):/, (_, letter) => `/mnt/${letter.toLowerCase()}`)
+      : tempFilePath;
 
     containerTempPath = `/tmp/${Date.now()}_${filename}`;
 
     // 3. Copy file into Docker container
-    const cpCmd = `${process.platform === "win32" ? "wsl docker" : "docker"} cp "${wslTempPath}" calibre:"${containerTempPath}"`;
+    const cpCmd = `${process.platform === "win32" ? "wsl docker" : "docker"} cp "${hostPathForDocker}" calibre:"${containerTempPath}"`;
     try {
       await execAsync(cpCmd);
     } catch (cpErr: any) {

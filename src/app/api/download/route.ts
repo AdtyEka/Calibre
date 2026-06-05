@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { spawn } from "child_process";
 
 function runCommandBinary(command: string, args: string[]): Promise<Buffer> {
+  if (command === "wsl" && process.platform !== "win32") {
+    command = "docker";
+    if (args[0] === "docker") {
+      args.shift();
+    }
+  }
   return new Promise((resolve, reject) => {
     const child = spawn(command, args);
     const chunks: Buffer[] = [];
